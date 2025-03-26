@@ -1,0 +1,44 @@
+%PDF-1.1
+%âã
+1 0 obj
+<</Type/Catalog/Pages<</Type/Pages/Count 1/Kids[2 0 R]>>>>
+endobj
+2 0 obj
+<</Type/Page/Parent 1 0 R/MediaBox[0 0 595 842]/Resources<</Font<</F1 3 0 R>>/ProcSet[/PDF/Text]>>/Contents 4 0 R>>
+endobj
+3 0 obj
+<</Type/Font/Subtype/Type1/Name/F1/BaseFont/Helvetica>>
+endobj
+4 0 obj
+<</Length 5 0 R>>
+stream
+BT
+/F1 16 Tf
+1 0 0 1 50 800 Tm
+20 TL
+(Multi-Modal Financial Advisor Application Guide)'
+()'
+(Please view the file application_guide.md for complete content)'
+()'
+(This PDF contains connection information, sample user accounts,)'
+(testing features, and troubleshooting instructions for the)'
+(Multi-Modal Financial Advisor Chatbot application.)'
+ET
+endstream
+endobj
+5 0 obj
+280
+endobj
+xref
+0 6
+0000000000 65536 f
+0000000017 00000 n
+0000000094 00000 n
+0000000228 00000 n
+0000000302 00000 n
+0000000637 00000 n
+trailer
+<</Size 6/Info <</CreationDate(D:20230326)/Producer(Financial Advisor App)/Title(Application Guide)>>/Root 1 0 R>>
+startxref
+657
+%%EOF 
