@@ -80,7 +80,7 @@ export const config = {
   
   // Feature flags
   features: {
-    enableMockData: true, // Enable mock data for testing onboarding
+    enableMockData: false, // Disable mock data to use the real backend
     enableDebug: envConfig[environment].debug
   },
   

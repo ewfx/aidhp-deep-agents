@@ -40,17 +40,16 @@ const MessageContainer = styled(Box)(({ theme }) => ({
   alignItems: 'flex-start',
 }));
 
-const MessageContent = styled(Box)(({ theme, isUser }) => ({
-  padding: theme.spacing(2),
-  borderRadius: theme.spacing(2),
-  maxWidth: '70%',
-  backgroundColor: isUser ? theme.palette.primary.main : theme.palette.background.paper,
-  color: isUser ? theme.palette.primary.contrastText : theme.palette.text.primary,
-  boxShadow: theme.shadows[1],
-  marginLeft: isUser ? 'auto' : '10px',
-  marginRight: isUser ? '10px' : 'auto',
-  position: 'relative',
+const MessageContent = styled(Box)(({ theme, isUserMessage }) => ({
+  padding: theme.spacing(1.5, 2),
+  borderRadius: theme.shape.borderRadius,
+  maxWidth: '80%',
   wordBreak: 'break-word',
+  backgroundColor: isUserMessage ? theme.palette.primary.main : theme.palette.background.paper,
+  color: isUserMessage ? theme.palette.primary.contrastText : theme.palette.text.primary,
+  boxShadow: theme.shadows[1],
+  marginLeft: isUserMessage ? 'auto' : '10px',
+  marginRight: isUserMessage ? '10px' : 'auto',
 }));
 
 const ChatContainer = styled(Paper)(({ theme }) => ({
@@ -522,7 +521,7 @@ const ChatInterface = ({ isOnboarding = false, isFullWidth = false }) => {
                 >
                   {message.sender === 'user' ? user?.user_id?.charAt(0).toUpperCase() || 'U' : 'W'}
                 </Avatar>
-                <MessageContent isUser={message.sender === 'user'}>
+                <MessageContent isUserMessage={message.sender === 'user'}>
                   {message.sender === 'user' ? (
                     <Typography variant="body1">{message.text}</Typography>
                   ) : (
