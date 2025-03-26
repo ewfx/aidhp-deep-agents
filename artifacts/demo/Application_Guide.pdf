@@ -1,44 +1,77 @@
-%PDF-1.1
-%âã
-1 0 obj
-<</Type/Catalog/Pages<</Type/Pages/Count 1/Kids[2 0 R]>>>>
-endobj
-2 0 obj
-<</Type/Page/Parent 1 0 R/MediaBox[0 0 595 842]/Resources<</Font<</F1 3 0 R>>/ProcSet[/PDF/Text]>>/Contents 4 0 R>>
-endobj
-3 0 obj
-<</Type/Font/Subtype/Type1/Name/F1/BaseFont/Helvetica>>
-endobj
-4 0 obj
-<</Length 5 0 R>>
+%PDF-1.4
+%âãÏÓ
+5 0 obj
+<<
+/Length 140
+>>
 stream
 BT
 /F1 16 Tf
-1 0 0 1 50 800 Tm
-20 TL
-(Multi-Modal Financial Advisor Application Guide)'
-()'
-(Please view the file application_guide.md for complete content)'
-()'
-(This PDF contains connection information, sample user accounts,)'
-(testing features, and troubleshooting instructions for the)'
-(Multi-Modal Financial Advisor Chatbot application.)'
+50 750 Td
+(Multi-Modal Financial Advisor Application Guide) Tj
+/F1 12 Tf
+0 -30 Td
+(Please view the markdown file for complete content) Tj
 ET
 endstream
 endobj
-5 0 obj
-280
+4 0 obj
+<<
+/Type /Page
+/MediaBox [0 0 612 792]
+/Resources <<
+/Font <<
+/F1 6 0 R
+>>
+>>
+/Contents 5 0 R
+/Parent 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [4 0 R]
+/Count 1
+>>
+endobj
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+3 0 obj
+<<
+/Creator (Financial Advisor App)
+/CreationDate (D:20240326120000)
+/Producer (Financial Advisor App)
+/Title (Application Guide)
+>>
 endobj
 xref
-0 6
-0000000000 65536 f
-0000000017 00000 n
-0000000094 00000 n
-0000000228 00000 n
-0000000302 00000 n
-0000000637 00000 n
+0 7
+0000000000 65535 f
+0000000379 00000 n
+0000000322 00000 n
+0000000478 00000 n
+0000000194 00000 n
+0000000015 00000 n
+0000000428 00000 n
 trailer
-<</Size 6/Info <</CreationDate(D:20230326)/Producer(Financial Advisor App)/Title(Application Guide)>>/Root 1 0 R>>
+<<
+/Size 7
+/Root 1 0 R
+/Info 3 0 R
+/ID [<1C3500CA9F7232B97E0EF3F789E8B7F2> <254C8D153F655D49945EAD68D801E011>]
+>>
 startxref
-657
+615
 %%EOF 
