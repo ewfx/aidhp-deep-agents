@@ -20,7 +20,7 @@ Key technical components include a FastAPI backend, MongoDB for data storage, an
 
 ## 🎥 Demo
 🔗 [Live Demo](#) (if applicable)  
-📹 [Video Demo](#) (if applicable)  
+📹 [Onboarding Process of a new User Demo](https://youtu.be/0bgSa0M4i68) (if applicable)  
 ## 🖼️ Screenshots:
 <p align="center">
   <img src="https://github.com/user-attachments/assets/2eb8472e-9ff6-43c1-8080-ed9b85de9917" width="45%">
