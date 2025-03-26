@@ -285,6 +285,26 @@ If MongoDB is not available or credentials are incorrect, the application will:
 2. Use fallback mock data for financial profiles
 3. Continue functioning with limited personalization features
 
+## 🧪 Testing
+The application includes a comprehensive test suite that covers over 80% of the codebase, ensuring reliability and robustness. The tests are organized to mirror the application structure:
+
+- **API Tests**: Verify endpoints for authentication, onboarding, recommendations, and more
+- **Model Tests**: Validate data models for users, conversations, and documents
+- **Service Tests**: Ensure correct behavior of LLM services and document processors
+- **Utils Tests**: Test database connections and repository operations
+
+To run the tests:
+```bash
+cd code
+./test/run_tests.sh
+```
+
+For coverage reports:
+```bash
+cd code
+./test/run_tests.sh -c
+```
+
 ## 🏗️ Tech Stack
 The **Multi-Modal Financial Advisor Chatbot** utilizes a comprehensive technology stack to deliver hyper-personalized financial recommendations:
 
@@ -314,6 +334,23 @@ The **Multi-Modal Financial Advisor Chatbot** utilizes a comprehensive technolog
 - **Transparency Mechanisms**: Clear disclosure of how user data influences recommendations.
 
 This robust and scalable architecture enables the chatbot to adapt dynamically to user behaviors, providing personalized and secure financial advice.
+
+## 🔮 Future Enhancements
+The **Multi-Modal Financial Advisor Chatbot** has several planned enhancements:
+
+1. **Voice Interface Integration**: Incorporating voice recognition and synthesis to enable hands-free interactions and improve accessibility.
+
+2. **Mobile Application Development**: Creating native mobile applications for iOS and Android to provide a seamless mobile experience.
+
+3. **Graph Neural Networks for Network Analysis**: Implementing GNNs to analyze the influence of social and financial networks on user financial behaviors and preferences. This approach will enable:
+   - Identifying patterns of financial influence within social networks
+   - Understanding how network connections impact financial decision-making
+   - Predicting potential financial product interest based on network dynamics
+   - Providing more nuanced recommendations that consider social context
+
+4. **Advanced Document Understanding**: Enhancing the image processing capabilities to extract and analyze more complex financial documents, including contracts and investment statements.
+
+5. **Behavioral Finance Integration**: Incorporating behavioral finance principles to identify cognitive biases in user decision-making and provide guidance to overcome them.
 
 ## 👥 Team
 - **Lakshay Sharma** - [GitHub](https://github.com/laksh42) | [LinkedIn](https://www.linkedin.com/in/lakshay-sharma-93a4431a9/)
