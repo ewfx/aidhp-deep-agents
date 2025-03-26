@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Modal Financial Advisor Chatbot</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        
+        :root {
+            --dark-red: #8B0000;
+            --light-red: #FFCCCB;
+            --gray: #666666;
+            --white: #FFFFFF;
+            --black: #000000;
+            --light-gray: #F5F5F5;
+        }
+        
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: var(--black);
+            background-color: var(--white);
+        }
+        
+        .slide {
+            page-break-after: always;
+            height: 100vh;
+            padding: 2rem;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .slide-content {
+            max-width: 900px;
+            margin: 0 auto;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .title-slide {
+            background-color: var(--dark-red);
+            color: var(--white);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .title-slide h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .title-slide h2 {
+            font-size: 1.8rem;
+            font-weight: 400;
+            margin-top: 0;
+        }
+        
+        h1, h2 {
+            color: var(--dark-red);
+        }
+        
+        .title-slide h1, .title-slide h2 {
+            color: var(--white);
+        }
+        
+        h1 {
+            border-bottom: 2px solid var(--dark-red);
+            padding-bottom: 0.5rem;
+        }
+        
+        ul {
+            list-style-type: none;
+            padding-left: 1.5rem;
+        }
+        
+        ul li {
+            position: relative;
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+        }
+        
+        ul li::before {
+            content: "•";
+            color: var(--dark-red);
+            font-weight: bold;
+            font-size: 1.2em;
+            position: absolute;
+            left: 0;
+        }
+        
+        .footer {
+            position: absolute;
+            bottom: 1rem;
+            left: 2rem;
+            right: 2rem;
+            display: flex;
+            justify-content: space-between;
+            color: var(--gray);
+            font-size: 0.8rem;
+        }
+        
+        .footer::before {
+            content: "";
+            position: absolute;
+            top: -0.5rem;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background-color: var(--light-red);
+        }
+        
+        .diagram {
+            margin: 1rem auto;
+            border: 1px solid var(--light-red);
+            padding: 1rem;
+            background-color: var(--light-gray);
+            border-radius: 5px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .dual-agent {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .agent-container {
+            display: flex;
+            justify-content: space-around;
+        }
+        
+        .agent {
+            width: 45%;
+            border: 2px solid var(--dark-red);
+            border-radius: 5px;
+            padding: 1rem;
+            margin: 0.5rem;
+            background-color: var(--white);
+        }
+        
+        .agent-title {
+            text-align: center;
+            background-color: var(--dark-red);
+            color: var(--white);
+            padding: 0.5rem;
+            margin: -1rem -1rem 1rem -1rem;
+            border-top-left-radius: 3px;
+            border-top-right-radius: 3px;
+        }
+        
+        .capability {
+            border: 1px solid var(--light-red);
+            border-radius: 3px;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background-color: var(--white);
+        }
+        
+        .db-connector {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        
+        .db {
+            border: 2px solid var(--dark-red);
+            border-radius: 5px;
+            padding: 0.5rem 1rem;
+            text-align: center;
+            background-color: var(--white);
+        }
+        
+        .arrow-down {
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid var(--dark-red);
+            margin: 0.5rem auto;
+        }
+        
+        .arrow-up {
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 10px solid var(--dark-red);
+            margin: 0.5rem auto;
+        }
+        
+        .multi-modal {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .input-types {
+            display: flex;
+            justify-content: space-around;
+        }
+        
+        .input-type {
+            width: 30%;
+            border: 2px solid var(--dark-red);
+            border-radius: 5px;
+            padding: 0.5rem;
+            margin: 0.5rem;
+            background-color: var(--white);
+            text-align: center;
+        }
+        
+        .input-title {
+            background-color: var(--dark-red);
+            color: var(--white);
+            padding: 0.5rem;
+            margin: -0.5rem -0.5rem 0.5rem -0.5rem;
+            border-top-left-radius: 3px;
+            border-top-right-radius: 3px;
+        }
+        
+        .process-step {
+            border: 1px solid var(--light-red);
+            border-radius: 3px;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background-color: var(--white);
+            text-align: center;
+        }
+        
+        .system-architecture {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .arch-layer {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        
+        .layer-box {
+            flex: 1;
+            border: 2px solid var(--dark-red);
+            border-radius: 5px;
+            padding: 0.5rem 1rem;
+            margin: 0 0.5rem;
+            background-color: var(--white);
+        }
+        
+        .layer-title {
+            background-color: var(--dark-red);
+            color: var(--white);
+            padding: 0.5rem;
+            margin: -0.5rem -1rem 0.5rem -1rem;
+            text-align: center;
+            border-top-left-radius: 3px;
+            border-top-right-radius: 3px;
+        }
+        
+        .connector {
+            text-align: center;
+            font-size: 1.5rem;
+            color: var(--dark-red);
+            margin: -0.5rem 0;
+        }
+        
+        .testing-coverage {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .test-categories {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 1rem;
+        }
+        
+        .test-category {
+            width: 30%;
+            border: 2px solid var(--dark-red);
+            border-radius: 5px;
+            padding: 0.5rem;
+            background-color: var(--white);
+        }
+        
+        .category-title {
+            background-color: var(--dark-red);
+            color: var(--white);
+            padding: 0.5rem;
+            margin: -0.5rem -0.5rem 0.5rem -0.5rem;
+            text-align: center;
+            border-top-left-radius: 3px;
+            border-top-right-radius: 3px;
+        }
+        
+        .coverage-bar {
+            width: 100%;
+            height: 30px;
+            background-color: #f0f0f0;
+            border-radius: 15px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+        
+        .coverage-fill {
+            height: 100%;
+            width: 82%;
+            background-color: var(--dark-red);
+            border-radius: 15px 0 0 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: bold;
+        }
+        
+        .pipeline {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+        }
+        
+        .pipeline-step {
+            padding: 0.5rem 1rem;
+            background-color: var(--dark-red);
+            color: var(--white);
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .team-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .team-member {
+            margin-bottom: 1rem;
+        }
+        
+        .emphasis {
+            color: var(--dark-red);
+            font-weight: bold;
+        }
+        
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .slide {
+                page-break-after: always;
+                height: auto;
+                min-height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Title Slide -->
+    <div class="slide title-slide">
+        <div class="slide-content">
+            <h1>Multi-Modal Financial Advisor Chatbot</h1>
+            <h2>A Hyper-Personalized AI Financial Advisory System</h2>
+            <div style="margin-top: 3rem;">
+                <p>Lakshay Sharma &amp; Apurva Singh</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Agenda Slide -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>Agenda</h1>
+            <ul>
+                <li>Project Overview</li>
+                <li>Key Features</li>
+                <li>System Architecture</li>
+                <li>Technology Stack</li>
+                <li>Challenges Overcome</li>
+                <li>Testing &amp; Quality Assurance</li>
+                <li>Future Enhancements</li>
+            </ul>
+            <div class="footer">
+                <div>Multi-Modal Financial Advisor Chatbot</div>
+                <div>2</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Project Overview Slide -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>Project Overview</h1>
+            <ul>
+                <li>AI-driven digital financial advisor with hyper-personalized recommendations</li>
+                <li>Leverages multi-modal data processing (text, images, voice)</li>
+                <li>Adapts dynamically to users' evolving financial needs</li>
+                <li>Enhances user engagement, financial literacy, and decision-making</li>
+            </ul>
+            <div class="footer">
+                <div>Multi-Modal Financial Advisor Chatbot</div>
+                <div>3</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Key Features: Dual-Agent Architecture Slide -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>Key Features: Dual-Agent Architecture</h1>
+            <div class="diagram dual-agent">
+                <h3 style="text-align: center; margin-top: 0;">DUAL-AGENT ARCHITECTURE</h3>
+                <div class="agent-container">
+                    <div class="agent">
+                        <div class="agent-title">ONBOARDING AGENT</div>
+                        <div class="capability">User Profiling</div>
+                        <div class="capability">Goal Assessment</div>
+                        <div class="capability">Risk Tolerance Evaluation</div>
+                    </div>
+                    <div class="agent">
+                        <div class="agent-title">ADVISORY AGENT</div>
+                        <div class="capability">Product Recommendations</div>
+                        <div class="capability">Educational Content</div>
+                        <div class="capability">Advisory Documents</div>
+                    </div>
+                </div>
+                <div class="db-connector">
+                    <div style="text-align: center;">
+                        <div class="arrow-down"></div>
+                        <div class="db">User Profile DB</div>
+                        <div class="arrow-up"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer">
+                <div>Multi-Modal Financial Advisor Chatbot</div>
+                <div>4</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Key Features: Multi-Modal Input Processing Slide -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>Key Features: Multi-Modal Input Processing</h1>
+            <div class="diagram multi-modal">
+                <h3 style="text-align: center; margin-top: 0;">MULTI-MODAL INPUT PROCESSING</h3>
+                <div class="input-types">
+                    <div class="input-type">
+                        <div class="input-title">TEXT</div>
+                        <div class="process-step">Natural Language Processing</div>
+                        <div class="process-step">Contextual Understanding</div>
+                        <div class="arrow-down"></div>
+                    </div>
+                    <div class="input-type">
+                        <div class="input-title">IMAGES</div>
+                        <div class="process-step">Document Analysis</div>
+                        <div class="process-step">Data Extraction</div>
+                        <div class="arrow-down"></div>
+                    </div>
+                    <div class="input-type">
+                        <div class="input-title">VOICE</div>
+                        <div class="process-step">Speech-to-Text</div>
+                        <div class="process-step">Intent Recognition</div>
+                        <div class="arrow-down"></div>
+                    </div>
+                </div>
+                <div style="background-color: var(--dark-red); color: var(--white); padding: 0.5rem; text-align: center; margin: 1rem 0; border-radius: 5px;">
+                    UNIFIED DATA REPRESENTATION
+                </div>
+                <div class="arrow-down"></div>
+                <div style="background-color: var(--dark-red); color: var(--white); padding: 0.5rem; text-align: center; margin: 1rem 0; border-radius: 5px;">
+                    PERSONALIZED FINANCIAL RECOMMENDATIONS
+                </div>
+            </div>
+            <div class="footer">
+                <div>Multi-Modal Financial Advisor Chatbot</div>
+                <div>5</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Key Features: Personalization & Transparency Slide -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>Key Features: Personalization &amp; Transparency</h1>
+            <ul>
+                <li><span class="emphasis">Personalized Advisory Documents:</span> Curated educational content</li>
+                <li><span class="emphasis">Product-Specific Chatbots:</span> Detailed product information</li>
+                <li><span class="emphasis">Explainable Recommendations:</span> Clear rationales for suggestions</li>
+                <li><span class="emphasis">Dynamic Adaptation:</span> Real-time learning from user interactions</li>
+            </ul>
+            <div class="footer">
+                <div>Multi-Modal Financial Advisor Chatbot</div>
+                <div>6</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Architecture Slide -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>System Architecture</h1>
+            <div class="diagram system-architecture">
+                <div class="arch-layer">
+                    <div class="layer-box">
+                        <div class="layer-title">Client Layer</div>
+                        <div>Web Interface</div>
+                        <div>React.js</div>
+                    </div>
+                    <div class="layer-box">
+                        <div class="layer-title">Application Layer</div>
+                        <div>FastAPI Backend</div>
+                        <div>API Endpoints</div>
+                        <div>Auth System</div>
+                    </div>
+                    <div class="layer-box">
+                        <div class="layer-title">AI Layer</div>
+                        <div>Onboarding Agent (LLM)</div>
+                        <div>Advisory Agent (LLM)</div>
+                    </div>
+                </div>
+                <div class="connector">↑ ↓</div>
+                <div class="layer-box" style="width: 50%;">
+                    <div class="layer-title">Data Layer</div>
+                    <div style="display: flex; justify-content: space-around;">
+                        <div>MongoDB</div>
+                        <div>Vector Store</div>
+                        <div>Redis Cache</div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer">
+                <div>Multi-Modal Financial Advisor Chatbot</div>
+                <div>7</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Technology Stack: Frontend & Backend Slide -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>Technology Stack: Frontend &amp; Backend</h1>
+            <div style="display: flex; justify-content: space-between;">
+                <div style="width: 48%;">
+                    <h2>Frontend:</h2>
+                    <ul>
+                        <li>React.js for interactive user interface</li>
+                        <li>Material-UI for consistent, professional elements</li>
+                        <li>React Markdown for formatted advisory documents</li>
+                    </ul>
+                </div>
+                <div style="width: 48%;">
+                    <h2>Backend:</h2>
+                    <ul>
+                        <li>FastAPI (Python) for API management</li>
+                        <li>JWT-based authentication system</li>
+                        <li>Multi-modal input processors</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer">
+                <div>Multi-Modal Financial Advisor Chatbot</div>
+                <div>8</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Technology Stack: AI & Data Slide -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>Technology Stack: AI &amp; Data</h1>
+            <div style="display: flex; justify-content: space-between;">
+                <div style="width: 48%;">
+                    <h2>AI Services:</h2>
+                    <ul>
+                        <li>Multiple LLM integrations (OpenAI, Mistral, Hugging Face)</li>
+                        <li>Retrieval-Augmented Generation (RAG) system</li>
+                        <li>Meta-prompt generation for personalization</li>
+                    </ul>
+                </div>
+                <div style="width: 48%;">
+                    <h2>Data Storage:</h2>
+                    <ul>
+                        <li>MongoDB for user profiles and transactions</li>
+                        <li>Vector store for embeddings</li>
+                        <li>Redis for performance caching</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer">
+                <div>Multi-Modal Financial Advisor Chatbot</div>
+                <div>9</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Challenges Overcome Slide -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>Challenges Overcome</h1>
+            <ul>
+                <li><span class="emphasis">Integrating Multi-Modal Inputs:</span> Processing diverse data types</li>
+                <li><span class="emphasis">Ensuring Data Privacy:</span> Secure handling of financial information</li>
+                <li><span class="emphasis">Real-Time Performance:</span> Efficient data processing and low latency</li>
+                <li><span class="emphasis">Transparent AI:</span> Explainable recommendations</li>
+                <li><span class="emphasis">Orchestrating Dual Agents:</span> Seamless transitions with context</li>
+                <li><span class="emphasis">Addressing AI Bias:</span> Regular auditing and diverse training data</li>
+            </ul>
+            <div class="footer">
+                <div>Multi-Modal Financial Advisor Chatbot</div>
+                <div>10</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Testing & Quality Assurance Slide -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>Testing &amp; Quality Assurance</h1>
+            <div class="diagram testing-coverage">
+                <div class="test-categories">
+                    <div class="test-category">
+                        <div class="category-title">API TESTING</div>
+                        <ul style="padding-left: 0;">
+                            <li>Authentication</li>
+                            <li>Onboarding</li>
+                            <li>Recommendations</li>
+                            <li>Chat Endpoints</li>
+                            <li>Document APIs</li>
+                        </ul>
+                    </div>
+                    <div class="test-category">
+                        <div class="category-title">MODEL TESTING</div>
+                        <ul style="padding-left: 0;">
+                            <li>User Models</li>
+                            <li>Conversation Models</li>
+                            <li>Document Models</li>
+                            <li>Financial Models</li>
+                            <li>Image Analysis Models</li>
+                        </ul>
+                    </div>
+                    <div class="test-category">
+                        <div class="category-title">SERVICE TESTING</div>
+                        <ul style="padding-left: 0;">
+                            <li>LLM Services</li>
+                            <li>Document Processing</li>
+                            <li>Recommendation Engine</li>
+                            <li>Authentication Service</li>
+                            <li>Multi-Modal Processing</li>
+                        </ul>
+                    </div>
+                </div>
+                <h3 style="text-align: center;">QUALITY METRICS: > 80% CODE COVERAGE</h3>
+                <div class="coverage-bar">
+                    <div class="coverage-fill">82%</div>
+                </div>
+                <h3 style="text-align: center;">CI/CD PIPELINE</h3>
+                <div class="pipeline">
+                    <div class="pipeline-step">Build</div>
+                    <div style="align-self: center;">→</div>
+                    <div class="pipeline-step">Test</div>
+                    <div style="align-self: center;">→</div>
+                    <div class="pipeline-step">Code Analysis</div>
+                    <div style="align-self: center;">→</div>
+                    <div class="pipeline-step">Deploy</div>
+                    <div style="align-self: center;">→</div>
+                    <div class="pipeline-step">Monitor</div>
+                </div>
+            </div>
+            <div class="footer">
+                <div>Multi-Modal Financial Advisor Chatbot</div>
+                <div>11</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Future Enhancements Slide -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>Future Enhancements</h1>
+            <ol>
+                <li><span class="emphasis">Voice Interface Integration</span>
+                    <ul>
+                        <li>Hands-free interactions and improved accessibility</li>
+                    </ul>
+                </li>
+                <li><span class="emphasis">Mobile Applications</span>
+                    <ul>
+                        <li>Native iOS and Android experiences</li>
+                    </ul>
+                </li>
+                <li><span class="emphasis">Graph Neural Networks (GNNs)</span>
+                    <ul>
+                        <li>Analysis of social and financial network influence</li>
+                        <li>Pattern recognition in financial behaviors</li>
+                        <li>Network-aware recommendations</li>
+                    </ul>
+                </li>
+            </ol>
+            <div class="footer">
+                <div>Multi-Modal Financial Advisor Chatbot</div>
+                <div>12</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Future Enhancements (continued) Slide -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>Future Enhancements (continued)</h1>
+            <ol start="4">
+                <li><span class="emphasis">Advanced Document Understanding</span>
+                    <ul>
+                        <li>Enhanced processing of complex financial documents</li>
+                        <li>Contract and investment statement analysis</li>
+                    </ul>
+                </li>
+                <li><span class="emphasis">Behavioral Finance Integration</span>
+                    <ul>
+                        <li>Identification of cognitive biases</li>
+                        <li>Guidance to overcome financial decision-making biases</li>
+                    </ul>
+                </li>
+            </ol>
+            <div class="footer">
+                <div>Multi-Modal Financial Advisor Chatbot</div>
+                <div>13</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Thank You Slide -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>Thank You!</h1>
+            <div style="text-align: center; margin-top: 2rem;">
+                <h2>Questions?</h2>
+            </div>
+            <div class="team-info" style="margin-top: 3rem;">
+                <h3>Contact Information</h3>
+                <div class="team-member">
+                    <strong>Lakshay Sharma</strong> - <a href="https://github.com/laksh42">GitHub</a>
+                </div>
+                <div class="team-member">
+                    <strong>Apurva Singh</strong> - <a href="https://github.com/apourva14">GitHub</a>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <strong>Project Repository:</strong> <a href="https://github.com/ewfx/aidhp-deep-agents">GitHub Repo</a>
+                </div>
+            </div>
+            <div class="footer">
+                <div>Multi-Modal Financial Advisor Chatbot</div>
+                <div>14</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
