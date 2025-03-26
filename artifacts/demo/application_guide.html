@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Modal Financial Advisor Application Guide</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 30px;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #0033a0;
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #0033a0;
+        }
+        h2 {
+            color: #ce1126;
+            margin-top: 30px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        h3 {
+            color: #0033a0;
+            margin-top: 25px;
+        }
+        ul, ol {
+            margin-bottom: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        code {
+            background-color: #f0f0f0;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: Consolas, Monaco, 'Courier New', monospace;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #ddd;
+        }
+        .code-block {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #ddd;
+            font-family: Consolas, Monaco, 'Courier New', monospace;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .persona {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border-left: 5px solid #0033a0;
+        }
+        .feature {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border-left: 5px solid #ce1126;
+        }
+        .note {
+            background-color: #fffde7;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            border-left: 5px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Multi-Modal Financial Advisor Application Guide</h1>
+
+        <h2>Introduction</h2>
+        <p>
+            This guide provides detailed instructions for connecting to and testing the Multi-Modal Financial Advisor Chatbot application. 
+            The system is designed to deliver hyper-personalized financial recommendations through an intuitive interface that responds to text, 
+            images, and future voice inputs.
+        </p>
+
+        <h2>Connection Information</h2>
+
+        <h3>Backend API</h3>
+        <ul>
+            <li><strong>URL</strong>: http://localhost:8000</li>
+            <li><strong>API Documentation</strong>: http://localhost:8000/docs</li>
+            <li><strong>Health Check</strong>: http://localhost:8000/api/health</li>
+        </ul>
+
+        <h3>Frontend Application</h3>
+        <ul>
+            <li><strong>URL</strong>: http://localhost:3000</li>
+            <li><strong>Default Credentials</strong>: Username: <code>testuser</code>, Password: <code>password</code></li>
+        </ul>
+
+        <h2>Running the Application</h2>
+        <ol>
+            <li>
+                <strong>Start the Backend</strong>:
+                <div class="code-block">
+                    cd code/src<br>
+                    python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+                </div>
+            </li>
+            <li>
+                <strong>Start the Frontend</strong>:
+                <div class="code-block">
+                    cd code/src/frontend<br>
+                    npm start
+                </div>
+            </li>
+            <li>
+                <strong>Access the Application</strong>:
+                <ul>
+                    <li>Open your browser and navigate to http://localhost:3000</li>
+                    <li>Log in with the provided test credentials or create a new account</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h2>Database Information</h2>
+        <p>
+            The application is connected to a MongoDB database containing approximately 100 sample user profiles with varied 
+            financial data, personas, and transaction histories. This data is used to provide personalized recommendations and insights.
+        </p>
+
+        <h2>Sample User Accounts</h2>
+        <p>
+            The following sample user accounts are available for testing. Each represents a distinct financial persona with 
+            different goals, risk tolerances, and financial circumstances:
+        </p>
+
+        <div class="persona">
+            <h3>Conservative Saver</h3>
+            <ul>
+                <li><strong>User ID</strong>: <code>user_conservative</code></li>
+                <li><strong>Password</strong>: <code>password</code></li>
+                <li><strong>Persona</strong>:
+                    <ul>
+                        <li>Age: 55-65</li>
+                        <li>Risk Tolerance: Low</li>
+                        <li>Income: $60,000-$80,000</li>
+                        <li>Goals: Retirement security, wealth preservation</li>
+                        <li>Key Characteristics: Prioritizes safety over growth, concerned about market volatility</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="persona">
+            <h3>Young Professional</h3>
+            <ul>
+                <li><strong>User ID</strong>: <code>user_growth</code></li>
+                <li><strong>Password</strong>: <code>password</code></li>
+                <li><strong>Persona</strong>:
+                    <ul>
+                        <li>Age: 25-35</li>
+                        <li>Risk Tolerance: Moderate-High</li>
+                        <li>Income: $70,000-$100,000</li>
+                        <li>Goals: Long-term wealth building, home purchase</li>
+                        <li>Key Characteristics: Tech-savvy, interested in sustainable investing, comfortable with technology</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="persona">
+            <h3>Family Planner</h3>
+            <ul>
+                <li><strong>User ID</strong>: <code>user_family</code></li>
+                <li><strong>Password</strong>: <code>password</code></li>
+                <li><strong>Persona</strong>:
+                    <ul>
+                        <li>Age: 35-45</li>
+                        <li>Risk Tolerance: Moderate</li>
+                        <li>Income: $90,000-$130,000</li>
+                        <li>Goals: College savings, family security, moderate growth</li>
+                        <li>Key Characteristics: Balances growth and security, interested in education funding options</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="persona">
+            <h3>Pre-Retiree</h3>
+            <ul>
+                <li><strong>User ID</strong>: <code>user_preretiree</code></li>
+                <li><strong>Password</strong>: <code>password</code></li>
+                <li><strong>Persona</strong>:
+                    <ul>
+                        <li>Age: 50-60</li>
+                        <li>Risk Tolerance: Moderate-Low</li>
+                        <li>Income: $110,000-$150,000</li>
+                        <li>Goals: Retirement optimization, tax efficiency</li>
+                        <li>Key Characteristics: Focused on retirement planning, interested in reducing tax burden</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="persona">
+            <h3>Business Owner</h3>
+            <ul>
+                <li><strong>User ID</strong>: <code>user_business</code></li>
+                <li><strong>Password</strong>: <code>password</code></li>
+                <li><strong>Persona</strong>:
+                    <ul>
+                        <li>Age: 40-55</li>
+                        <li>Risk Tolerance: Moderate-High</li>
+                        <li>Income: $150,000+</li>
+                        <li>Goals: Business growth, wealth diversification</li>
+                        <li>Key Characteristics: Needs both business and personal financial advice, interested in asset protection</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <h2>Testing Features</h2>
+
+        <div class="feature">
+            <h3>1. Onboarding Process</h3>
+            <p>
+                The application uses a comprehensive onboarding process with a dedicated AI agent to understand the user's 
+                financial situation, goals, and preferences. To test this feature:
+            </p>
+            <ol>
+                <li>Register a new account</li>
+                <li>Follow the guided onboarding flow</li>
+                <li>Observe how the system builds your financial profile</li>
+            </ol>
+        </div>
+
+        <div class="feature">
+            <h3>2. Advisory Documents</h3>
+            <p>
+                The system provides personalized educational content based on user goals and knowledge gaps:
+            </p>
+            <ol>
+                <li>Navigate to the "Advisory Documents" section</li>
+                <li>Browse through recommended financial education materials</li>
+                <li>Open documents to view personalized content with proper markdown formatting</li>
+            </ol>
+        </div>
+
+        <div class="feature">
+            <h3>3. Product-Specific Chatbots</h3>
+            <p>
+                Each recommended financial product comes with its own specialized chatbot:
+            </p>
+            <ol>
+                <li>Go to the "Recommendations" section</li>
+                <li>Select a recommended product</li>
+                <li>Click on "Chat with Product Specialist"</li>
+                <li>Ask specific questions about the product's features, benefits, and suitability</li>
+            </ol>
+        </div>
+
+        <div class="feature">
+            <h3>4. Multi-Modal Interaction</h3>
+            <p>
+                Test the system's ability to process different types of inputs:
+            </p>
+            <ol>
+                <li>Use the main chatbot interface for text-based questions</li>
+                <li>Upload financial documents using the document upload feature</li>
+                <li>Observe how the system extracts and analyzes information from these inputs</li>
+            </ol>
+        </div>
+
+        <h2>Troubleshooting</h2>
+        <ul>
+            <li><strong>Connection Issues</strong>: Ensure both backend and frontend servers are running</li>
+            <li><strong>Authentication Problems</strong>: If you cannot log in, try the default test account</li>
+            <li><strong>Database Connectivity</strong>: Check MongoDB connection in the backend logs</li>
+            <li><strong>API Errors</strong>: Refer to the API documentation at http://localhost:8000/docs</li>
+        </ul>
+
+        <div class="note">
+            <h3>Support</h3>
+            <p>
+                For additional assistance, please contact the development team or refer to the project documentation in the <code>artifacts</code> directory.
+            </p>
+        </div>
+    </div>
+</body>
+</html> 
