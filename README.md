@@ -104,10 +104,10 @@ Create a `.env` file in the root directory with the following variables:
 
 ```
 # MongoDB Configuration
-MONGODB_URL=mongodb://localhost:27017
+MONGODB_URL=mongodb+srv://dataset-db.ky0bo.mongodb.net/
 MONGODB_DB=financial_advisor
-MONGODB_USER=your_mongodb_user
-MONGODB_PASSWORD=your_mongodb_password
+MONGODB_USER=wf-hack
+MONGODB_PASSWORD=eAzy@123
 
 # Redis Configuration
 REDIS_URL=redis://localhost:6379
