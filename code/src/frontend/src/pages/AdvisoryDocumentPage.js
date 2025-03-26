@@ -19,6 +19,7 @@ import {
 import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
 import { config } from '../config';
 import api from '../api';
+import MarkdownRenderer from '../components/MarkdownRenderer';
 
 const AdvisoryDocumentPage = () => {
   const { id } = useParams();
@@ -182,28 +183,10 @@ Once you've established these fundamentals, you can move on to more advanced fin
             {/* Document content */}
             <Box sx={{ 
               mt: 2, 
-              px: { xs: 0, md: 2 },
-              "& h1, & h2, & h3, & h4, & h5, & h6": {
-                mt: 3,
-                mb: 2,
-                fontWeight: 600,
-                color: theme => theme.palette.primary.main
-              },
-              "& p": {
-                mb: 2,
-                lineHeight: 1.7
-              },
-              "& ul, & ol": {
-                mb: 2,
-                pl: 4
-              },
-              "& li": {
-                mb: 1
-              }
+              px: { xs: 0, md: 2 }
             }}>
               {document.content ? (
-                // Use a markdown renderer here if content is in markdown format
-                <div dangerouslySetInnerHTML={{ __html: document.content.replace(/\n/g, '<br>').replace(/^#{1,6}\s+(.+)$/gm, '<h3>$1</h3>') }} />
+                <MarkdownRenderer content={document.content} />
               ) : (
                 <Typography variant="body1">No content available for this document.</Typography>
               )}
