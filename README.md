@@ -48,6 +48,18 @@ Key technical components include a FastAPI backend, MongoDB for data storage, an
 ## 💡 Inspiration
 ​The Multi-Modal Financial Advisor Chatbot was inspired by the need to enhance customer engagement in the financial sector through personalized and adaptive advisory services. Traditional financial advice often lacks personalization and fails to adapt to individual user behaviors and preferences. This project aims to address this gap by developing an AI-driven digital advisor that leverages multi-modal inputs—such as text, images, and voice—to provide hyper-personalized financial recommendations. By integrating advanced Generative AI techniques and real-time behavioral analysis, the chatbot dynamically tailors its advice to align with each user's unique financial habits and needs, fostering greater trust and loyalty.
 
+Our approach draws heavily from recent innovations in agentic AI systems, which demonstrate autonomous goal-seeking behavior to solve complex tasks. The dual-agent architecture employed in our solution is inspired by the concept of specialized AI agents working collaboratively towards a common objective. Unlike traditional chatbots that simply respond to queries, our agentic system proactively:
+
+Demonstrates goal-directed behavior: The onboarding agent actively pursues specific information gathering objectives, while the advisory agent focuses on generating optimal recommendations based on comprehensive user profiles.
+
+Maintains persistent memory: The system builds and continuously refines a dynamic user profile, allowing it to recall prior interactions and develop increasingly personalized advice over time.
+
+Exhibits planning capabilities: The advisory agent strategically plans its recommendations, considering both immediate user needs and long-term financial objectives.
+
+Shows autonomous decision-making: The system independently determines which financial products are most suitable based on multiple factors, including risk tolerance, financial goals, time horizons, and market conditions.
+
+This agentic approach represents a significant evolution beyond traditional rule-based systems, enabling our chatbot to deliver truly adaptive and personalized financial guidance that evolves with changing user circumstances and market conditions.
+
 ## ⚙️ What It Does
 The **Multi-Modal Financial Advisor Chatbot** project is designed to deliver hyper-personalized financial product recommendations by integrating advanced AI techniques with multi-modal data inputs. This approach aims to provide users with tailored financial advice that adapts dynamically to their unique profiles and behaviors.
 
