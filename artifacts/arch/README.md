@@ -4,6 +4,10 @@
 The **Multi-Modal Financial Advisor Chatbot** is a cutting-edge solution designed to offer **hyper-personalized financial product recommendations**. Developed as part of the **Wells Fargo AI/DHP Developer Acceleration Hackathon**, this chatbot leverages **Generative AI techniques** and **multi-modal inputs** (text, images, and voice) to dynamically tailor financial advice based on user profiles, historical transaction data, sentiment analysis, and real-time behavioral inputs.
 
 The solution employs a sophisticated **dual-agent architecture** where an onboarding agent first deeply understands the user's financial situation, goals, and preferences, followed by an advisory agent that delivers customized content and product recommendations. This approach ensures highly relevant and personalized advice for each user.
+## 🎥 Video Demo for our application
+🎥 [Full application walkthrough Demo](https://www.youtube.com/watch?v=d_cFyfek7WA)
+
+📹 [Onboarding Process of a new User Demo](https://youtu.be/0bgSa0M4i68) 
 
 ## Product Vision
 Our vision is to empower users with an **intelligent digital advisor** that understands their financial habits and needs, adapting in real-time to provide **personalized recommendations**. This approach aims to revolutionize customer engagement in the financial sector, moving from **generic advice** to a **dynamic, data-driven model** that fosters trust and loyalty through transparent, explainable AI-powered recommendations.
