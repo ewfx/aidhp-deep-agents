@@ -227,25 +227,25 @@ If MongoDB is not available or credentials are incorrect, the application will:
 3. Continue functioning with limited personalization features
 
 ## 🏗️ Tech Stack
-The **Multi-Modal Financial Advisor Chatbot** utilizes a comprehensive technology stack to deliver hyper-personalized financial recommendations:
+The **Multi-Modal Financial Advisor Chatbot** utilizes a comprehensive technology stack to deliver hyper-personalized financial recommendations:
 
 **Frontend:**
-- **React.js**: Provides an interactive and responsive user interface for chat interactions, document uploads, and content display.
+- **React.js**: Provides an interactive and responsive user interface for chat interactions, document uploads, and content display.
 
 **Backend:**
 - **FastAPI (Python)**: Manages API requests, orchestrates service interactions, processes multi-modal inputs, handles user sessions and authentication, and integrates with various AI service providers.
 
 **Database:**
-- **MongoDB**: Stores user profiles, chat histories, financial transaction data, and document analysis results, supporting dynamic queries for personalized recommendations.
+- **MongoDB**: Stores user profiles, chat histories, financial transaction data, and document analysis results, supporting dynamic queries for personalized recommendations.
 
 **AI Services:**
-- **Large Language Models (LLMs)**: Integrates models such as OpenAI GPT-3.5/4, Mistral AI's Mistral-7B, and Hugging Face models to generate intelligent financial recommendations.
-- **Retrieval-Augmented Generation (RAG) System**: Enhances response accuracy by retrieving relevant information to augment the generative process.
-- **Multi-Modal Processing**: Handles text, image, and voice inputs to provide a comprehensive understanding of user data.
+- **Large Language Models (LLMs)**: Integrates models such as OpenAI GPT-3.5/4, Mistral AI's Mistral-7B, and Hugging Face models to generate intelligent financial recommendations.
+- **Retrieval-Augmented Generation (RAG) System**: Enhances response accuracy by retrieving relevant information to augment the generative process.
+- **Multi-Modal Processing**: Handles text, image, and voice inputs to provide a comprehensive understanding of user data.
 
 **Data Storage and Caching:**
-- **Vector Store (Embeddings)**: Manages embeddings for efficient similarity searches and recommendations.
-- **Redis**: Utilized for caching to improve system performance and responsiveness.
+- **Vector Store (Embeddings)**: Manages embeddings for efficient similarity searches and recommendations.
+- **Redis**: Utilized for caching to improve system performance and responsiveness.
 
 **Authentication and Security:**
 - Implements secure user authentication and session management, ensuring compliance with data privacy standards for ethical and secure handling of financial data.
