@@ -1,4 +1,5 @@
 import logging
+import urllib.parse
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pymongo.errors import ConnectionFailure
 from app.config import settings
@@ -11,8 +12,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Global database connection
-db_client: AsyncIOMotorClient = None
-db: AsyncIOMotorDatabase = None
+_mongo_client: Optional[AsyncIOMotorClient] = None
+_mongo_db: Optional[AsyncIOMotorDatabase] = None
 mock_db: Dict[str, List[Dict[str, Any]]] = None
 
 class MockCollection:
@@ -125,48 +126,65 @@ class MockDatabase:
             return {"ok": 1}
         return {"ok": 0}
 
+async def get_database() -> AsyncIOMotorDatabase:
+    """
+    Get the MongoDB database instance.
+    
+    Returns:
+        AsyncIOMotorDatabase: The MongoDB database instance.
+    """
+    if _mongo_db is None:
+        await connect_to_mongo()
+    return _mongo_db
+
 async def connect_to_mongo():
-    """Create database connection."""
-    global db_client
-    global db
+    """
+    Connect to MongoDB using settings from configuration.
+    Updates the global _mongo_client and _mongo_db variables.
+    """
+    global _mongo_client, _mongo_db
+    
+    if _mongo_client is not None:
+        return
+    
+    # Check if we should use local MongoDB
+    if settings.USE_LOCAL_DB:
+        logger.info("Using local MongoDB connection")
+        # Use localhost with default port
+        mongo_url = "mongodb://localhost:27017"
+        db_name = settings.MONGODB_DB or "financial_assistant"
+    else:
+        logger.info("Using remote MongoDB connection")
+        # URL encode username and password
+        username = urllib.parse.quote_plus(settings.MONGODB_USER)
+        password = urllib.parse.quote_plus(settings.MONGODB_PASSWORD)
+        
+        # Build connection string with encoded credentials
+        mongo_url = settings.MONGODB_URL.replace(
+            f"{settings.MONGODB_USER}:{settings.MONGODB_PASSWORD}",
+            f"{username}:{password}"
+        )
+        db_name = settings.MONGODB_DB
+    
+    logger.info(f"Connecting to MongoDB at {mongo_url}, database: {db_name}")
+    
     try:
-        # Check if we should use local or remote MongoDB
-        if settings.USE_LOCAL_DB:
-            logger.info("Using local MongoDB connection")
-            mongodb_url = settings.LOCAL_MONGODB_URL
-            mongodb_db = settings.LOCAL_MONGODB_DB
-        else:
-            logger.info("Using remote MongoDB connection")
-            mongodb_url = settings.MONGODB_URL
-            mongodb_db = settings.MONGODB_DB
-            
-        logger.info(f"Connecting to MongoDB at {mongodb_url}, database: {mongodb_db}")
-        db_client = AsyncIOMotorClient(mongodb_url)
-        db = db_client[mongodb_db]
+        _mongo_client = AsyncIOMotorClient(mongo_url)
+        _mongo_db = _mongo_client[db_name]
         
-        # Verify connection
-        await db.command("ping")
+        # Validate connection by issuing a simple command
+        await _mongo_db.command("ping")
         logger.info("Successfully connected to MongoDB")
-        
-        return db
     except Exception as e:
         logger.error(f"Failed to connect to MongoDB: {str(e)}")
         raise
 
 async def close_mongo_connection():
-    """Close database connection."""
-    global db_client
-    if db_client:
-        logger.info("Closing MongoDB connection")
-        db_client.close()
-
-async def get_database():
     """
-    Get the database instance. Used as a dependency.
+    Close the MongoDB connection.
     """
-    global db, mock_db
-    if settings.ENABLE_MOCK_DATA and mock_db is not None:
-        return mock_db
-    if db is None:
-        db = await connect_to_mongo()
-    return db 
+    global _mongo_client
+    if _mongo_client:
+        _mongo_client.close()
+        _mongo_client = None
+        logger.info("MongoDB connection closed") 

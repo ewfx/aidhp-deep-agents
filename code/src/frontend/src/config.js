@@ -44,8 +44,10 @@ export const config = {
     maxMessages: 10,
     typingIndicatorDelay: 1000,
     aiResponseDelay: 800,
-    sessionStorageKey: 'chatSession',
-    welcomeMessage: 'Welcome to the Wells Fargo Financial Assistant! I\'m here to help you with your financial goals.'
+    sessionStorageKey: 'chat_session',
+    welcomeMessage: "Hello! I'm your AI financial assistant. How can I help you with your financial questions today?",
+    inputPlaceholder: "Type your message...",
+    fileUploadEnabled: true,
   },
   
   // API endpoints
@@ -78,7 +80,7 @@ export const config = {
   
   // Feature flags
   features: {
-    enableMockData: false, // Using real backend with proper transformations now
+    enableMockData: true, // Enable mock data for testing onboarding
     enableDebug: envConfig[environment].debug
   },
   
@@ -104,5 +106,12 @@ export const config = {
       sidebarWidth: 240,
       headerHeight: 64
     }
+  },
+  
+  // Onboarding settings
+  onboarding: {
+    sessionStorageKey: 'onboarding_session',
+    completedStorageKey: 'onboarding_completed',
+    welcomeMessage: "Welcome! Let's understand your financial goals and preferences to provide you with personalized recommendations."
   }
 }; 

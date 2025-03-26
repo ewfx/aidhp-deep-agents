@@ -18,15 +18,25 @@ fi
 SCRIPT_DIR=$(pwd)
 echo "Installation directory: $SCRIPT_DIR"
 
-# Create and activate virtual environment
-echo "Creating Python virtual environment..."
-python3 -m venv .venv
+# Create virtual environment if it doesn't exist
+if [ ! -d ".venv" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv .venv
+fi
+
+# Activate virtual environment
 source .venv/bin/activate
 
-# Install Python dependencies
-echo "Installing Python requirements..."
+# Upgrade pip
 python3 -m pip install --upgrade pip
-pip install -r requirements.txt
+
+# Install dependencies
+echo "Installing dependencies..."
+python3 -m pip install -r requirements.txt
+
+# Create a test user for testing
+echo "Creating test user..."
+python3 create_test_user.py
 
 # Install additional dependencies that might be missing
 echo "Installing additional dependencies..."

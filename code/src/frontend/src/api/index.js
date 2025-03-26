@@ -60,19 +60,20 @@ const api = {
         console.log('API Request: POST /api/auth/token');
         console.log('Headers being sent:', {
           'Accept': 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
           ...(apiClient.defaults.headers.common['Authorization'] ? 
             { 'Authorization': apiClient.defaults.headers.common['Authorization'] } : {})
         });
 
-        // Use URLSearchParams for form data
-        const formData = new URLSearchParams();
-        formData.append('username', userId);
-        formData.append('password', password);
+        // Use JSON data
+        const jsonData = {
+          username: userId,
+          password: password
+        };
 
-        const response = await apiClient.post('/api/auth/token', formData, {
+        const response = await apiClient.post('/api/auth/token', jsonData, {
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-Type': 'application/json'
           }
         });
         
@@ -225,6 +226,80 @@ const api = {
         return response.data;
       } catch (error) {
         console.error('Recommendations API error:', error);
+        throw error;
+      }
+    }
+  },
+
+  // Onboarding endpoints
+  onboarding: {
+    // Start onboarding session
+    startSession: async () => {
+      try {
+        console.log('API Request: POST /api/onboard/start');
+        console.log('Headers being sent:', {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...(apiClient.defaults.headers.common['Authorization'] ? 
+            { 'Authorization': apiClient.defaults.headers.common['Authorization'] } : {})
+        });
+        
+        const response = await apiClient.post('/api/onboard/start');
+        console.log('Onboarding start response:', response.data);
+        return response.data;
+      } catch (error) {
+        console.error('Onboarding start session API error:', error);
+        throw error;
+      }
+    },
+
+    // Update onboarding session with user response
+    updateSession: async (sessionId, message) => {
+      try {
+        console.log('API Request: POST /api/onboard/update');
+        console.log('Headers being sent:', {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...(apiClient.defaults.headers.common['Authorization'] ? 
+            { 'Authorization': apiClient.defaults.headers.common['Authorization'] } : {})
+        });
+        
+        const payload = {
+          session_id: sessionId,
+          message: message
+        };
+
+        console.log('Sending onboarding update:', payload);
+        const response = await apiClient.post('/api/onboard/update', payload);
+        console.log('Onboarding update response:', response.data);
+        return response.data;
+      } catch (error) {
+        console.error('Onboarding update session API error:', error);
+        throw error;
+      }
+    },
+
+    // Complete onboarding session
+    completeSession: async (sessionId) => {
+      try {
+        console.log('API Request: POST /api/onboard/complete');
+        console.log('Headers being sent:', {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...(apiClient.defaults.headers.common['Authorization'] ? 
+            { 'Authorization': apiClient.defaults.headers.common['Authorization'] } : {})
+        });
+        
+        const payload = {
+          session_id: sessionId
+        };
+
+        console.log('Sending onboarding complete:', payload);
+        const response = await apiClient.post('/api/onboard/complete', payload);
+        console.log('Onboarding complete response:', response.data);
+        return response.data;
+      } catch (error) {
+        console.error('Onboarding complete session API error:', error);
         throw error;
       }
     }

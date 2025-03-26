@@ -1,5 +1,5 @@
 from bson import ObjectId
-from motor.motor_asyncio import AsyncIOMotorDatabase
+from motor.motor_asyncio import AsyncIOMotorDatabase, AsyncIOMotorCollection
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 import logging
@@ -18,10 +18,15 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 class UserRepository:
     """Repository for user-related database operations."""
     
-    def __init__(self, database: AsyncIOMotorDatabase):
+    def __init__(self, db: AsyncIOMotorDatabase):
         """Initialize with database connection."""
-        self.db = database
-        self.collection = database.users
+        self.db = db
+        self.collection = db["users"]
+        self.demographics_collection = db["demographics"]
+        self.accounts_collection = db["accounts"]
+        self.credit_collection = db["credit_history"]
+        self.investments_collection = db["investments"]
+        self.transactions_collection = db["transactions"]
     
     async def create_indexes(self):
         """Create necessary indexes."""
@@ -155,26 +160,26 @@ class UserRepository:
         user_data = user.dict()
         
         # Demographic data
-        demographics = await self.db.demographic_data.find_one({"user_id": user_id})
+        demographics = await self.demographics_collection.find_one({"user_id": user_id})
         if demographics:
             # Remove _id field from the result
             demographics.pop("_id", None)
             user_data["demographics"] = demographics
             
         # Account data
-        account = await self.db.account_data.find_one({"user_id": user_id})
+        account = await self.accounts_collection.find_one({"user_id": user_id})
         if account:
             account.pop("_id", None)
             user_data["account"] = account
             
         # Credit history
-        credit = await self.db.credit_history.find_one({"user_id": user_id})
+        credit = await self.credit_collection.find_one({"user_id": user_id})
         if credit:
             credit.pop("_id", None)
             user_data["credit"] = credit
             
         # Investments
-        investments_cursor = self.db.investment_data.find({"user_id": user_id})
+        investments_cursor = self.investments_collection.find({"user_id": user_id})
         investments = await investments_cursor.to_list(length=100)
         if investments:
             for inv in investments:
@@ -182,7 +187,7 @@ class UserRepository:
             user_data["investments"] = investments
             
         # Transactions
-        transactions_cursor = self.db.transaction_data.find({"user_id": user_id}).sort("date", -1).limit(20)
+        transactions_cursor = self.transactions_collection.find({"user_id": user_id}).sort("date", -1).limit(20)
         transactions = await transactions_cursor.to_list(length=20)
         if transactions:
             for tx in transactions:
@@ -208,4 +213,40 @@ class UserRepository:
                 last_login=user.last_login
             ))
         
-        return users 
+        return users
+
+    async def update_user_last_login(self, user_id: str) -> bool:
+        """Update the last login timestamp for a user."""
+        try:
+            result = await self.collection.update_one(
+                {"_id": user_id},
+                {"$set": {"last_login": datetime.now().isoformat()}}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"Error updating user last login: {str(e)}")
+            return False
+
+    async def update_user_onboarding_status(self, user_id: str, completed: bool) -> bool:
+        """
+        Update the onboarding status for a user.
+        
+        Args:
+            user_id: The user ID
+            completed: Whether onboarding is completed
+            
+        Returns:
+            bool: True if update was successful
+        """
+        try:
+            result = await self.collection.update_one(
+                {"_id": user_id},
+                {"$set": {
+                    "onboarding_completed": completed,
+                    "onboarding_completed_at": datetime.now().isoformat() if completed else None
+                }}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"Error updating user onboarding status: {str(e)}")
+            return False 

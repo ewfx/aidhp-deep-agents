@@ -1,6 +1,5 @@
 from typing import List, Dict, Any, Optional, Tuple
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
 from sentence_transformers import SentenceTransformer
 from PIL import Image
 import numpy as np

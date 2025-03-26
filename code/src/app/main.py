@@ -12,6 +12,8 @@ import traceback
 import asyncio
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
+import os
+from datetime import datetime
 
 from app.config import settings
 from app.database.mongodb import connect_to_mongo, close_mongo_connection
@@ -24,6 +26,7 @@ from app.api.recommendations import router as recommendations_router
 from app.repository.chat_repository import ChatRepository
 from app.utils.import_csv import import_csv_to_collection, csv_to_dict
 from app.api import auth, chat, document, financial, recommendations
+from app.api import onboard  # Import the new onboarding API module
 from app.data_initializer import initialize_database, add_synthetic_data
 
 # Set up logging
@@ -39,7 +42,11 @@ class HeaderSizeMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         return response
 
-app = FastAPI(title="Wells Fargo Financial Assistant")
+app = FastAPI(
+    title="Financial Advisory API",
+    description="API for financial advisory services",
+    version="1.0.0",
+)
 
 # Add header size middleware
 app.add_middleware(HeaderSizeMiddleware)
@@ -47,45 +54,42 @@ app.add_middleware(HeaderSizeMiddleware)
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],  # For production, specify the exact origins
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept"],
-    max_age=86400,  # Cache preflight requests for 24 hours
-    expose_headers=["Content-Length", "Content-Type"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# Mount static files
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# Mount static files - comment out if causing issues
+# app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Include routers with the /api prefix to match frontend expectations
 app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(chat_router, prefix="/api/chat", tags=["Chat"])
 app.include_router(recommendations_router, prefix="/api/recommendations", tags=["Recommendations"])
-app.include_router(auth.router)
-app.include_router(chat.router)
-app.include_router(recommendations.router)
-app.include_router(document.router)
-app.include_router(financial.router)
+app.include_router(document.router, prefix="/api/documents", tags=["Documents"])
+app.include_router(financial.router, prefix="/api/financial", tags=["Financial"])
+app.include_router(onboard.router, prefix="/api/onboard", tags=["Onboarding"])
 
 # Database connection events
 @app.on_event("startup")
 async def startup_db_client():
-    """Initialize database with sample data on startup"""
+    logger.info("Starting up the application...")
     try:
-        logger.info("Starting data initialization...")
-        # Initialize the database with CSV data
-        stats = await initialize_database()
-        logger.info(f"Database initialization complete with stats: {stats}")
+        # Initialize the database with sample data
+        await initialize_database()
+        logger.info("Database initialized successfully")
         
-        # Add synthetic data for enhanced personalization
-        await add_synthetic_data()
-        logger.info("Synthetic data addition complete")
+        # Only add synthetic data if environment variable is set
+        if os.environ.get("ADD_SYNTHETIC_DATA", "false").lower() == "true":
+            await add_synthetic_data()
+            logger.info("Synthetic data added successfully")
     except Exception as e:
-        logger.error(f"Error during startup initialization: {str(e)}")
+        logger.error(f"Error during startup: {str(e)}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    logger.info("Shutting down the application...")
     await close_mongo_connection()
 
 # Pydantic models for request/response
@@ -161,10 +165,11 @@ async def health_check():
     return {"status": "ok"}
 
 @app.exception_handler(Exception)
-async def generic_exception_handler(request: Request, exc: Exception):
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": str(exc)},
+        content={"message": "An unexpected error occurred. Please try again later."},
     )
 
 if __name__ == "__main__":

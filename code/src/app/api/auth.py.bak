@@ -1,12 +1,11 @@
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, Union
-from fastapi import APIRouter, Depends, HTTPException, status, Body, Form, Request
+from typing import Optional, Dict, Any
+from fastapi import APIRouter, Depends, HTTPException, status, Body, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 import logging
-import bcrypt  # Add explicit import for bcrypt
 
 from app.models.user import User, UserInDB, UserCreate, Token, TokenData, UserData
 from app.repository.user_repository import UserRepository
@@ -19,28 +18,16 @@ ALGORITHM = settings.JWT_ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Update the OAuth2PasswordBearer to point to a different endpoint
+# This separates the token verification from the login endpoint
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/get-token")
 
 router = APIRouter()
 
 logger = logging.getLogger(__name__)
 
-# Request models
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
 def verify_password(plain_password, hashed_password):
-    try:
-        logger.debug(f"Verifying password with bcrypt version: {bcrypt.__version__}")
-        # Use bcrypt directly instead of passlib
-        password_bytes = plain_password.encode('utf-8')
-        hashed_bytes = hashed_password.encode('utf-8')
-        return bcrypt.checkpw(password_bytes, hashed_bytes)
-    except Exception as e:
-        logger.error(f"Error in password verification: {str(e)}")
-        # Fallback to passlib if bcrypt direct approach fails
-        return pwd_context.verify(plain_password, hashed_password)
+    return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
     return pwd_context.hash(password)
@@ -53,26 +40,16 @@ async def get_user(user_id: str):
         return user
     return None
 
-async def authenticate_user(user_repo, username: str, password: str):
-    user = await get_user(username)
+async def authenticate_user(user_id: str, password: str):
+    user = await get_user(user_id)
     if not user:
-        logger.warning(f"User not found: {username}")
+        logger.warning(f"User not found: {user_id}")
         return False
-    # More detailed logging
-    logger.debug(f"Authenticating user: {username}")
-    logger.debug(f"User object: {type(user).__name__}")
-    logger.debug(f"User attributes: {[attr for attr in dir(user) if not attr.startswith('_')]}")
-    
-    if not hasattr(user, 'hashed_password'):
-        logger.error(f"User object has no hashed_password attribute")
-        return False
-        
-    logger.debug(f"Hashed password: {user.hashed_password[:10]}...")
-    
+    # Debug the user object
+    logger.debug(f"Authenticating user: {user_id}, User object has hashed_password: {hasattr(user, 'hashed_password')}")
     if not verify_password(password, user.hashed_password):
-        logger.warning(f"Invalid password for user: {username}")
+        logger.warning(f"Invalid password for user: {user_id}")
         return False
-    logger.info(f"Authentication successful for user: {username}")
     return user
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -104,75 +81,36 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         raise credentials_exception
     return user
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
 @router.post("/token", response_model=Token)
-async def login_for_access_token(request: Request):
-    """
-    Handle login and issue JWT token.
-    Supports both form data and JSON for flexibility.
-    """
+async def login_for_access_token(login_data: LoginRequest):
     try:
-        content_type = request.headers.get("Content-Type", "")
-        
-        # Handle form data (OAuth2 password flow)
-        if "application/x-www-form-urlencoded" in content_type:
-            form_data = await request.form()
-            username = form_data.get("username")
-            password = form_data.get("password")
-        # Handle JSON data
-        else:
-            try:
-                json_data = await request.json()
-                username = json_data.get("username")
-                password = json_data.get("password")
-            except Exception as e:
-                logger.error(f"Error parsing JSON: {str(e)}")
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid request format: {str(e)}"
-                )
-        
-        # Validate username and password are provided
-        if not username or not password:
-            logger.warning(f"Login attempt with missing credentials: username={username is not None}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username and password are required"
-            )
-        
-        # Log login attempt
-        logger.info(f"Login attempt for user: {username}")
-        
-        # Get database and user repository
-        db = await get_database()
-        user_repo = UserRepository(db)
-        
-        # Authenticate user
-        user = await authenticate_user(user_repo, username, password)
+        logger.info(f"Login attempt for user: {login_data.username}")
+        user = await authenticate_user(login_data.username, login_data.password)
         if not user:
-            logger.warning(f"Failed login attempt for user: {username}")
+            logger.warning(f"Failed login attempt for user: {login_data.username}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect user ID or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
         
-        # Create access token
+        # Update last login time
+        db = await get_database()
+        user_repo = UserRepository(db)
+        await user_repo.update_last_login(user.user_id)
+        
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={"sub": user.user_id}, expires_delta=access_token_expires
         )
-        
-        # Update last login time
-        await user_repo.update_user_last_login(user.user_id)
-        
-        # Return token
+        logger.info(f"Successful login for user: {user.user_id}")
         return {"access_token": access_token, "token_type": "bearer", "user_id": user.user_id}
-        
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.error(f"Error during login: {str(e)}")
-        # Return a generic error to avoid exposing implementation details
+        logger.error(f"Login error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An error occurred during login: {str(e)}"
@@ -260,4 +198,35 @@ async def validate_token(current_user: User = Depends(get_current_user)):
         "valid": True,
         "user_id": current_user.user_id,
         "email": current_user.email
-    } 
+    }
+
+@router.post("/get-token", include_in_schema=True)
+async def get_token_oauth2(form_data: OAuth2PasswordRequestForm = Depends()):
+    try:
+        logger.info(f"OAuth2 token request for user: {form_data.username}")
+        user = await authenticate_user(form_data.username, form_data.password)
+        if not user:
+            logger.warning(f"Failed OAuth2 token request for user: {form_data.username}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect user ID or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Update last login time
+        db = await get_database()
+        user_repo = UserRepository(db)
+        await user_repo.update_last_login(user.user_id)
+        
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.user_id}, expires_delta=access_token_expires
+        )
+        logger.info(f"Successful OAuth2 token request for user: {user.user_id}")
+        return {"access_token": access_token, "token_type": "bearer"}
+    except Exception as e:
+        logger.error(f"OAuth2 token request error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred during OAuth2 token request: {str(e)}"
+        ) 

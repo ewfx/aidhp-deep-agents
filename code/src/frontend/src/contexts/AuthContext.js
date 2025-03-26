@@ -199,9 +199,18 @@ export const AuthProvider = ({ children }) => {
           
           logAuthEvent('LOGIN_SUCCESS', { userId });
           
-          // Redirect to dashboard after successful login
+          // Check if onboarding is needed for this user
+          const isFirstLogin = !localStorage.getItem('onboarding_completed');
+          
+          // Redirect to onboarding if it's first login, otherwise to dashboard
           if (window.location.pathname === '/login' || window.location.pathname === '/') {
-            window.location.href = '/dashboard';
+            if (isFirstLogin) {
+              // For first-time users, redirect to onboarding
+              window.location.href = '/onboarding';
+            } else {
+              // For returning users, redirect directly to dashboard
+              window.location.href = '/dashboard';
+            }
           }
           
           return true;
@@ -215,9 +224,18 @@ export const AuthProvider = ({ children }) => {
             error: userError.message 
           });
           
-          // Redirect to dashboard after successful login
+          // Check if onboarding is needed for this user
+          const isFirstLogin = !localStorage.getItem('onboarding_completed');
+          
+          // Redirect to onboarding if it's first login, otherwise to dashboard
           if (window.location.pathname === '/login' || window.location.pathname === '/') {
-            window.location.href = '/dashboard';
+            if (isFirstLogin) {
+              // For first-time users, redirect to onboarding
+              window.location.href = '/onboarding';
+            } else {
+              // For returning users, redirect directly to dashboard
+              window.location.href = '/dashboard';
+            }
           }
           
           return true;

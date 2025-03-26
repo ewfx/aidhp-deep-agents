@@ -201,21 +201,19 @@ const api = {
           };
         }
         
-        // Use URLSearchParams for x-www-form-urlencoded data (OAuth2 format)
-        const formData = new URLSearchParams();
-        formData.append('grant_type', 'password'); // Required for OAuth2 password flow
-        formData.append('username', username);
-        formData.append('password', password);
-        
         console.log('Login attempt with:', username);
         
-        // Use application/x-www-form-urlencoded for OAuth2
-        const response = await api_instance.post(config.endpoints.auth.login, formData.toString(), {
+        // Use JSON format instead of form data
+        const jsonData = {
+          username: username,
+          password: password
+        };
+        
+        // Use application/json content type
+        const response = await api_instance.post(config.endpoints.auth.login, jsonData, {
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          // Disable the global transformRequest for this specific call
-          transformRequest: [(data) => data], // Don't transform the data
+            'Content-Type': 'application/json',
+          }
         });
         
         console.log('Login response:', response.data);

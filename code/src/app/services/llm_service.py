@@ -5,6 +5,7 @@ import os
 from typing import List, Dict, Any, Optional
 from tenacity import retry, stop_after_attempt, wait_exponential
 from datetime import datetime
+import openai
 
 from app.config import settings
 from app.repository.financial_repository import FinancialRepository
@@ -19,7 +20,6 @@ class LLMService:
         """Initialize the LLM service."""
         # Get API keys from settings
         self.mistral_api_key = settings.MISTRAL_API_KEY
-        self.huggingface_token = settings.HUGGINGFACE_TOKEN
         self.openai_api_key = settings.OPENAI_API_KEY
         self.google_api_key = os.environ.get("GOOGLE_API_KEY") or getattr(settings, "GOOGLE_API_KEY", None)
         
@@ -39,12 +39,6 @@ class LLMService:
             self.model = "mistral-tiny"  # Using Mistral's smallest model for reliability
             self.api_url = "https://api.mistral.ai/v1/chat/completions"
             logger.info(f"Configured to use Mistral AI API with model: {self.model}")
-        elif self.huggingface_token and self.huggingface_token != "your-huggingface-token":
-            self.provider = "huggingface"
-            # Use a smaller, more reliable model - gpt2 is a safer option than Mistral-7B
-            self.model = "gpt2"
-            self.api_url = f"https://api-inference.huggingface.co/models/{self.model}"
-            logger.info(f"Configured to use HuggingFace API with model: {self.model}")
         elif self.openai_api_key and self.openai_api_key != "your-openai-api-key":
             self.provider = "openai"
             self.model = getattr(settings, "OPENAI_MODEL", None) or "gpt-3.5-turbo"
@@ -82,8 +76,6 @@ class LLMService:
             # Make the API call based on provider
             if self.provider == "openai":
                 return await self._call_openai_api(messages, timeout)
-            elif self.provider == "huggingface":
-                return await self._call_huggingface_api(messages, timeout)
             elif self.provider == "mistral":
                 return await self._call_mistral_api(messages, timeout)
             elif self.provider == "google":
@@ -134,46 +126,6 @@ class LLMService:
             else:
                 logger.error(f"Unexpected API response format: {result}")
                 return "I apologize, but I encountered an issue while processing your request."
-    
-    async def _call_huggingface_api(self, messages: List[Dict[str, str]], timeout: float) -> str:
-        """Call the HuggingFace Inference API."""
-        # Convert chat format to plain text
-        prompt = self._format_messages_for_huggingface(messages)
-        
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            headers = {
-                "Authorization": f"Bearer {self.huggingface_token}",
-                "Content-Type": "application/json"
-            }
-            
-            payload = {
-                "inputs": prompt,
-                "parameters": {
-                    "max_new_tokens": self.max_tokens,
-                    "temperature": self.temperature,
-                    "return_full_text": False,
-                }
-            }
-            
-            response = await client.post(
-                self.api_url,
-                headers=headers,
-                json=payload,
-                timeout=timeout
-            )
-            
-            response.raise_for_status()
-            result = response.json()
-            
-            # Handle different HuggingFace response formats
-            if isinstance(result, list) and len(result) > 0:
-                if "generated_text" in result[0]:
-                    return result[0]["generated_text"].strip()
-            elif isinstance(result, dict) and "generated_text" in result:
-                return result["generated_text"].strip()
-                
-            logger.error(f"Unexpected HuggingFace response format: {result}")
-            return "I apologize, but I encountered an issue while processing your request."
     
     async def _call_mistral_api(self, messages: List[Dict[str, str]], timeout: float) -> str:
         """Call the Mistral AI API."""
@@ -284,21 +236,6 @@ class LLMService:
             
             return "I apologize, but I encountered an issue while processing your request with the Google API."
     
-    def _format_messages_for_huggingface(self, messages: List[Dict[str, str]]) -> str:
-        """Format messages for HuggingFace text generation API."""
-        # For simpler models like GPT-2, just extract the last user message
-        last_user_message = None
-        for message in reversed(messages):
-            if message["role"] == "user":
-                last_user_message = message["content"]
-                break
-        
-        if last_user_message:
-            return last_user_message
-            
-        # If no user message found, use a default prompt
-        return "Please provide financial advice."
-    
     def _generate_mock_response(self, messages: List[Dict[str, str]]) -> str:
         """Generate a mock response when no API key is available."""
         if not messages:
@@ -306,7 +243,23 @@ class LLMService:
             
         last_message = messages[-1]["content"].lower()
         
-        # Simple keyword-based responses
+        # Onboarding specific responses
+        if any(keyword in last_message for keyword in ["onboard", "new user", "get started", "financial goal"]):
+            return "Hi there! I'd love to help you plan your financial future. What are your primary financial goals right now? Are you saving for something specific, looking to invest, or perhaps planning for retirement?"
+        
+        if any(keyword in last_message for keyword in ["retirement", "saving", "save for"]):
+            return "That's great to know. How soon are you planning to achieve this goal? Understanding your timeline helps us recommend the right strategies for you."
+        
+        if any(keyword in last_message for keyword in ["timeline", "years", "soon", "long term"]):
+            return "Thanks for sharing that. Could you tell me about your risk tolerance when it comes to investing? Do you prefer safer investments with steady returns, or are you comfortable with some volatility for potentially higher returns?"
+        
+        if any(keyword in last_message for keyword in ["risk", "invest", "volatile", "safe"]):
+            return "Thank you for sharing all this information with me! Based on what you've told me, I can now provide you with personalized recommendations. Would you like to see your customized financial plan?"
+        
+        if "complete" in last_message or "thank" in last_message:
+            return "Great! I've completed your onboarding process. Your personalized recommendations are now ready to view on your dashboard. Thank you for taking the time to share your financial goals with me!"
+        
+        # Simple keyword-based responses for regular financial advice
         if "invest" in last_message or "investing" in last_message:
             return "Based on general investment principles, it's usually a good idea to diversify your portfolio. Consider a mix of stocks, bonds, and other assets based on your risk tolerance and time horizon."
             
@@ -321,10 +274,40 @@ class LLMService:
             
         elif "budget" in last_message:
             return "Creating a budget helps you track income and expenses. The 50/30/20 rule suggests allocating 50% to needs, 30% to wants, and 20% to savings and debt repayment."
-            
+        
         # Default response for other topics
-        return "As a financial advisor, I can help with questions about investing, saving, debt management, retirement planning, budgeting, and other financial topics. How can I assist you today?"
+        return "I understand. Could you tell me more about your financial situation so I can better assist you?"
 
+    async def generate_response_for_prompt(self, prompt: str, system_message: str = "") -> str:
+        """
+        Generate a response from a prompt string and optional system message.
+        This is an adaptation for the onboarding API.
+        
+        Args:
+            prompt: The prompt text
+            system_message: Optional system message
+            
+        Returns:
+            The generated text response
+        """
+        messages = []
+        
+        # Add system message if provided
+        if system_message:
+            messages.append({
+                "role": "system",
+                "content": system_message
+            })
+        
+        # Add user prompt
+        messages.append({
+            "role": "user",
+            "content": prompt
+        })
+        
+        # Use the main generate_response method
+        return await self.generate_response(messages)
+    
     async def test_api_key(self):
         """Test if the API key is valid by making a minimal API call."""
         if self.provider == "mock":
@@ -363,26 +346,6 @@ class LLMService:
                         logger.error(f"Response: {response.text}")
                         return False
                     
-            elif self.provider == "huggingface":
-                # Test HuggingFace API key
-                test_prompt = "Hello, world!"
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    headers = {
-                        "Authorization": f"Bearer {self.huggingface_token}"
-                    }
-                    
-                    response = await client.get(
-                        "https://huggingface.co/api/whoami",
-                        headers=headers
-                    )
-                    
-                    if response.status_code == 200:
-                        logger.info("HuggingFace API key is valid!")
-                        return True
-                    else:
-                        logger.error(f"HuggingFace API key test failed with status: {response.status_code}")
-                        return False
-                    
             elif self.provider == "openai":
                 # Test OpenAI API key
                 async with httpx.AsyncClient(timeout=10.0) as client:
@@ -406,6 +369,20 @@ class LLMService:
             logger.error(f"Error testing API key: {str(e)}")
             return False
 
+# For backward compatibility and service access
+_llm_service = None
+
+def get_llm_service() -> LLMService:
+    """
+    Get the LLM service instance (singleton).
+    
+    Returns:
+        LLMService instance
+    """
+    global _llm_service
+    if _llm_service is None:
+        _llm_service = LLMService()
+    return _llm_service
 
 async def generate_financial_context(user_id: str) -> Dict[str, Any]:
     """
@@ -584,7 +561,7 @@ async def generate_llm_response(conversation_context: List[Dict[str, str]], user
         logger.info("========================")
         
         # Generate response
-        logger.info(f"Generating response with provider: {llm_service.provider}, model: {llm_service.model}")
+        logger.info(f"Generating response with model: {llm_service.model}")
         response = await llm_service.generate_response(messages)
         return response
         
