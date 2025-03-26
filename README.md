@@ -21,8 +21,9 @@ Our solution employs a sophisticated dual-agent architecture: the first agent fo
 Key technical components include a FastAPI backend, MongoDB for data storage, and a real-time recommendation engine using Reinforcement Learning from Human Feedback (RLHF). The system ensures data security and compliance with financial privacy standards, while emphasizing ethical AI practices, explainability, and transparency in all user interactions. This project aims to revolutionize digital banking by providing highly personalized, AI-driven financial planning, ultimately enhancing user engagement, financial literacy, and decision-making through a smart, adaptive chatbot.
 
 ## 🎥 Demo
-🎥 [Full application walkthrough Demo](https://www.youtube.com/watch?v=d_cFyfek7WA) (if applicable) 
-📹 [Onboarding Process of a new User Demo](https://youtu.be/0bgSa0M4i68) (if applicable)  
+🎥 [Full application walkthrough Demo](https://www.youtube.com/watch?v=d_cFyfek7WA)
+
+📹 [Onboarding Process of a new User Demo](https://youtu.be/0bgSa0M4i68) 
 
 ## 🖼️ Screenshots:
 <p align="center">
