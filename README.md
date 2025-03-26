@@ -35,6 +35,8 @@ Key technical components include a FastAPI backend, MongoDB for data storage, an
   <img src="https://github.com/user-attachments/assets/0f8311b5-103b-413d-9fad-6ace447b45a6" width="45%">
   <img src="https://github.com/user-attachments/assets/90fec8a0-6ed6-45f2-9c82-f482ad5375a4" width="45%">
   <img src="https://github.com/user-attachments/assets/d4a8ecbd-b646-4272-b935-f43f9cde022a" width="45%">
+  <img src="https://github.com/user-attachments/assets/6eeb707c-dc3c-489e-bc5c-e0dae0545b6d" width="45%">
+
 
 
   
