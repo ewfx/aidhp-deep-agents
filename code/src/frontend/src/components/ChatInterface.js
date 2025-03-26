@@ -36,13 +36,16 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 
 const MessageContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
-  marginBottom: theme.spacing(2),
+  marginBottom: theme.spacing(3),
   alignItems: 'flex-start',
+  position: 'relative',
 }));
 
 const MessageContent = styled(Box)(({ theme, isUserMessage }) => ({
   padding: theme.spacing(1.5, 2),
-  borderRadius: theme.shape.borderRadius,
+  borderRadius: isUserMessage 
+    ? theme.shape.borderRadius * 2 + ' ' + theme.shape.borderRadius * 2 + ' 0 ' + theme.shape.borderRadius * 2
+    : theme.shape.borderRadius * 2 + ' ' + theme.shape.borderRadius * 2 + ' ' + theme.shape.borderRadius * 2 + ' 0',
   maxWidth: '80%',
   wordBreak: 'break-word',
   backgroundColor: isUserMessage ? theme.palette.primary.main : theme.palette.background.paper,
@@ -50,17 +53,27 @@ const MessageContent = styled(Box)(({ theme, isUserMessage }) => ({
   boxShadow: theme.shadows[1],
   marginLeft: isUserMessage ? 'auto' : '10px',
   marginRight: isUserMessage ? '10px' : 'auto',
+  position: 'relative',
+  transition: 'all 0.2s ease',
+  '&:hover': {
+    boxShadow: theme.shadows[2],
+  },
 }));
 
 const ChatContainer = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(2),
   display: 'flex',
   flexDirection: 'column',
-  height: 'calc(100vh - 64px)',
+  height: 'calc(100vh - 100px)',
+  maxHeight: 700,
   position: 'relative',
   backgroundColor: theme.palette.mode === 'dark' 
       ? theme.palette.background.default 
-      : theme.palette.grey[100],
+      : theme.palette.grey[50], // Lighter background
+  borderRadius: theme.shape.borderRadius * 2, // More rounded corners
+  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)', // Softer shadow
+  border: `1px solid ${theme.palette.divider}`,
+  overflow: 'hidden', // Prevent overflow issues
 }));
 
 const MessagesBox = styled(Box)(({ theme }) => ({
@@ -68,6 +81,19 @@ const MessagesBox = styled(Box)(({ theme }) => ({
   overflowY: 'auto',
   padding: theme.spacing(2),
   marginBottom: theme.spacing(2),
+  '&::-webkit-scrollbar': {
+    width: '8px',
+  },
+  '&::-webkit-scrollbar-track': {
+    background: 'transparent',
+  },
+  '&::-webkit-scrollbar-thumb': {
+    background: theme.palette.grey[300],
+    borderRadius: '4px',
+  },
+  '&::-webkit-scrollbar-thumb:hover': {
+    background: theme.palette.grey[400],
+  },
 }));
 
 const InputArea = styled(Box)(({ theme }) => ({
@@ -300,10 +326,30 @@ const ChatInterface = ({ isOnboarding = false, isFullWidth = false }) => {
           response.state?.is_complete || false
         );
         
-        // Update recommendations
+        // Update recommendations, but only show a limited number (1-2) and only when there's high confidence
+        // Only show recommendations every 3-4 messages to avoid overwhelming the user
         if (response.recommendations && response.recommendations.length > 0) {
-          console.log('Setting recommendations from response:', response.recommendations);
-          setRecommendations(response.recommendations);
+          console.log('Got recommendations from response:', response.recommendations);
+          // Only show recommendations occasionally, not for every message
+          // Use the message count as a heuristic
+          const messageCount = messages.length + 2; // +2 for the current user message and bot response
+          const shouldShowRecommendation = 
+            messageCount > 5 && // Only after a few exchanges
+            messageCount % 4 === 0 && // Only every 4th message
+            response.recommendations.some(rec => rec.confidence > 0.7); // Only if there's a high confidence recommendation
+            
+          if (shouldShowRecommendation) {
+            // Limit to at most 2 highest confidence recommendations
+            const limitedRecommendations = response.recommendations
+              .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
+              .slice(0, 2);
+            
+            console.log('Setting limited recommendations:', limitedRecommendations);
+            setRecommendations(limitedRecommendations);
+          } else {
+            // Don't show recommendations for this message
+            setRecommendations([]);
+          }
         }
       } else {
         console.warn('No response text received from API:', response);
@@ -537,6 +583,22 @@ const ChatInterface = ({ isOnboarding = false, isFullWidth = false }) => {
                       <Box sx={{ mt: 1 }}>
                         <MarkdownRenderer content={message.text} />
                       </Box>
+                      
+                      {/* Show inline recommendations (if any for this message) */}
+                      {message.recommendations && message.recommendations.length > 0 && (
+                        <Box sx={{ mt: 2, borderTop: '1px solid', borderColor: 'divider', pt: 1 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            Recommended for you:
+                          </Typography>
+                          {message.recommendations.map((rec, idx) => (
+                            <Box key={idx} sx={{ mt: 1, p: 1, bgcolor: 'background.paper', borderRadius: 1 }}>
+                              <Typography variant="body2" fontWeight="medium">{rec.title}</Typography>
+                              <Typography variant="caption" color="text.secondary">{rec.description}</Typography>
+                            </Box>
+                          ))}
+                        </Box>
+                      )}
+                      
                       {message.sender === 'bot' && !message.isError && (
                         <FeedbackContainer>
                           <IconButton 
@@ -581,9 +643,36 @@ const ChatInterface = ({ isOnboarding = false, isFullWidth = false }) => {
             </Box>
           )}
           
+          {/* Recommendations as a compact card - only when there are recommendations */}
           {recommendations.length > 0 && (
             <Box sx={{ mb: 2 }}>
-              <RecommendationList recommendations={recommendations} />
+              <Card variant="outlined" sx={{ maxHeight: '200px', overflowY: 'auto' }}>
+                <CardContent sx={{ py: 1 }}>
+                  <Typography variant="subtitle2" color="primary" gutterBottom>
+                    Personalized Recommendations
+                  </Typography>
+                  {recommendations.map((rec, idx) => (
+                    <Box key={idx} sx={{ 
+                      display: 'flex', 
+                      alignItems: 'flex-start', 
+                      mb: 1,
+                      pb: 1,
+                      borderBottom: idx < recommendations.length - 1 ? '1px solid' : 'none',
+                      borderColor: 'divider'
+                    }}>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" fontWeight="medium">{rec.title}</Typography>
+                        <Typography variant="caption" color="text.secondary">{rec.description}</Typography>
+                      </Box>
+                      {rec.action && (
+                        <Button size="small" variant="outlined" sx={{ ml: 1, minWidth: 'auto' }}>
+                          {rec.action}
+                        </Button>
+                      )}
+                    </Box>
+                  ))}
+                </CardContent>
+              </Card>
             </Box>
           )}
           

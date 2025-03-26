@@ -5,6 +5,11 @@ from passlib.context import CryptContext
 import logging
 import uuid
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -17,12 +22,17 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 TEST_USER_EMAIL = "testuser"  # Changed from test@example.com to testuser
 TEST_USER_PASSWORD = "password123"
 
+# Get MongoDB connection string from environment
+MONGODB_URL = os.getenv("MONGODB_URL")
+MONGODB_DB = os.getenv("MONGODB_DB", "dataset")
+
 async def create_test_user():
     """Create a test user in the database."""
     try:
         # Connect to MongoDB
-        client = AsyncIOMotorClient("mongodb://localhost:27017")
-        db = client.financial_db
+        logger.info(f"Connecting to MongoDB at {MONGODB_URL}, database: {MONGODB_DB}")
+        client = AsyncIOMotorClient(MONGODB_URL)
+        db = client[MONGODB_DB]
         
         # Create users collection if it doesn't exist
         if "users" not in await db.list_collection_names():
@@ -32,6 +42,13 @@ async def create_test_user():
         existing_user = await db.users.find_one({"username": TEST_USER_EMAIL})
         if existing_user:
             logger.info(f"Test user already exists: {existing_user.get('_id')}")
+            # Update password to ensure it's correct
+            hashed_password = pwd_context.hash(TEST_USER_PASSWORD)
+            await db.users.update_one(
+                {"_id": existing_user.get('_id')},
+                {"$set": {"hashed_password": hashed_password}}
+            )
+            logger.info("Updated password for existing test user")
             return existing_user.get('_id'), TEST_USER_EMAIL
         
         # Create new user
