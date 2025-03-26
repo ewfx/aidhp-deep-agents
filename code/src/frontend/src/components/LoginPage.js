@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, 
   Container,
@@ -25,8 +25,29 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
-  const { login, register, error: authError } = useAuth();
+  const { login, register, error: authError, isAuthenticated, redirectPath } = useAuth();
   const navigate = useNavigate();
+
+  // Handle navigation when redirectPath changes
+  useEffect(() => {
+    if (redirectPath) {
+      console.log('Navigating to:', redirectPath);
+      navigate(redirectPath);
+    }
+  }, [redirectPath, navigate]);
+  
+  // For demo purposes, pre-fill demo credentials
+  useEffect(() => {
+    setUsername('testuser');
+    setPassword('password');
+  }, []);
+  
+  // Set error message from auth context
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+    }
+  }, [authError]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -134,6 +155,13 @@ const LoginPage = () => {
     
     return String(error);
   };
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && redirectPath) {
+      navigate(redirectPath);
+    }
+  }, [isAuthenticated, navigate, redirectPath]);
 
   return (
     <Container component="main" maxWidth="md">

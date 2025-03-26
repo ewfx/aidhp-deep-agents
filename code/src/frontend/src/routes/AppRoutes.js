@@ -1,92 +1,105 @@
-import React, { useEffect } from 'react';
-import { Route, Routes, Navigate, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import LoginPage from '../components/LoginPage';
-import DashboardPage from '../pages/DashboardPage';
 import OnboardingChatPage from '../pages/OnboardingChatPage';
+import DashboardPage from '../pages/DashboardPage';
+import AdvisoryDocumentsPage from '../pages/AdvisoryDocumentsPage';
+import AdvisoryDocumentPage from '../pages/AdvisoryDocumentPage';
+import RecommendationDetailPage from '../pages/RecommendationDetailPage';
 
-// Protected route wrapper component
+// Protected route component
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
-  
-  // Show loading instead of redirecting while auth state is being determined
-  if (loading) {
-    return <div>Loading...</div>;
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+
+  // If authentication is still loading, show nothing (or a loading spinner)
+  if (isLoading) {
+    return null;
   }
   
+  // If not authenticated, redirect to login
   if (!isAuthenticated) {
-    // Redirect to login if not authenticated
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
+  // If authenticated, show the protected component
   return children;
 };
 
-// Protected route that automatically directs user to appropriate page based on onboarding status
+// Authenticated route with onboarding check 
 const AuthenticatedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
-  const navigate = useNavigate();
+  const { user, isLoading } = useAuth();
+  const location = useLocation();
   
-  // Check onboarding status on mount
-  useEffect(() => {
-    if (isAuthenticated && !loading) {
-      const onboardingCompleted = localStorage.getItem('onboarding_completed');
-      
-      // If onboarding not completed and not already on onboarding page, redirect to onboarding
-      if (onboardingCompleted !== 'true' && window.location.pathname !== '/onboarding') {
-        navigate('/onboarding');
-      }
-    }
-  }, [isAuthenticated, loading, navigate]);
-  
-  // Show loading instead of redirecting while auth state is being determined
-  if (loading) {
-    return <div>Loading...</div>;
+  // If still loading user data, show nothing
+  if (isLoading) {
+    return null;
   }
   
-  if (!isAuthenticated) {
-    // Redirect to login if not authenticated
-    return <Navigate to="/" replace />;
+  // Check if onboarding is completed using localStorage
+  const onboardingCompleted = localStorage.getItem('onboarding_completed') === 'true';
+  
+  // Check if onboarding is completed, if not redirect to onboarding
+  if (user && !onboardingCompleted) {
+    console.log('Onboarding not completed, redirecting to onboarding page');
+    return <Navigate to="/onboarding" state={{ from: location }} replace />;
   }
   
   return children;
 };
 
 const AppRoutes = () => {
+  const { isAuthenticated } = useAuth();
+  
   return (
     <Routes>
       {/* Public routes */}
-      <Route path="/" element={<LoginPage />} />
+      <Route path="/login" element={<LoginPage />} />
       
-      {/* Onboarding route (protected) */}
-      <Route 
-        path="/onboarding" 
-        element={
-          <ProtectedRoute>
-            <OnboardingChatPage />
-          </ProtectedRoute>
-        } 
-      />
+      {/* Protected routes */}
+      <Route path="/onboarding" element={
+        <ProtectedRoute>
+          <OnboardingChatPage />
+        </ProtectedRoute>
+      } />
       
-      {/* Dashboard route (protected with automatic redirection) */}
-      <Route 
-        path="/dashboard" 
-        element={
+      <Route path="/dashboard" element={
+        <ProtectedRoute>
           <AuthenticatedRoute>
             <DashboardPage />
           </AuthenticatedRoute>
-        } 
-      />
+        </ProtectedRoute>
+      } />
       
-      {/* Redirect all other routes to dashboard if logged in, or login page if not */}
-      <Route 
-        path="*" 
-        element={
-          <ProtectedRoute>
-            <Navigate to="/dashboard" replace />
-          </ProtectedRoute>
-        } 
-      />
+      <Route path="/advisory-documents" element={
+        <ProtectedRoute>
+          <AuthenticatedRoute>
+            <AdvisoryDocumentsPage />
+          </AuthenticatedRoute>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/advisory-documents/:id" element={
+        <ProtectedRoute>
+          <AuthenticatedRoute>
+            <AdvisoryDocumentPage />
+          </AuthenticatedRoute>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/recommendations/:id" element={
+        <ProtectedRoute>
+          <AuthenticatedRoute>
+            <RecommendationDetailPage />
+          </AuthenticatedRoute>
+        </ProtectedRoute>
+      } />
+      
+      {/* Catch-all redirect */}
+      <Route path="*" element={
+        isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />
+      } />
     </Routes>
   );
 };

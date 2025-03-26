@@ -24,6 +24,24 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   // Add connection state to track API connectivity
   const [apiConnected, setApiConnected] = useState(true);
+  // Add state for redirection
+  const [redirectPath, setRedirectPath] = useState(null);
+
+  // After a successful login, provide the redirect path that should be used
+  // Components can use this to perform navigation via useEffect
+  const getRedirectPath = () => {
+    const currentPath = window.location.pathname;
+    const isFirstLogin = !localStorage.getItem('onboarding_completed');
+    
+    if (currentPath === '/login' || currentPath === '/') {
+      if (isFirstLogin) {
+        return '/onboarding';
+      } else {
+        return '/dashboard';
+      }
+    }
+    return null;
+  };
 
   // Helper function to check connection safely
   const safeCheckConnection = async () => {
@@ -199,19 +217,9 @@ export const AuthProvider = ({ children }) => {
           
           logAuthEvent('LOGIN_SUCCESS', { userId });
           
-          // Check if onboarding is needed for this user
-          const isFirstLogin = !localStorage.getItem('onboarding_completed');
-          
-          // Redirect to onboarding if it's first login, otherwise to dashboard
-          if (window.location.pathname === '/login' || window.location.pathname === '/') {
-            if (isFirstLogin) {
-              // For first-time users, redirect to onboarding
-              window.location.href = '/onboarding';
-            } else {
-              // For returning users, redirect directly to dashboard
-              window.location.href = '/dashboard';
-            }
-          }
+          // Set redirect path instead of navigating directly
+          // This will be used by components to navigate safely
+          setRedirectPath(getRedirectPath());
           
           return true;
         } catch (userError) {
@@ -224,19 +232,9 @@ export const AuthProvider = ({ children }) => {
             error: userError.message 
           });
           
-          // Check if onboarding is needed for this user
-          const isFirstLogin = !localStorage.getItem('onboarding_completed');
-          
-          // Redirect to onboarding if it's first login, otherwise to dashboard
-          if (window.location.pathname === '/login' || window.location.pathname === '/') {
-            if (isFirstLogin) {
-              // For first-time users, redirect to onboarding
-              window.location.href = '/onboarding';
-            } else {
-              // For returning users, redirect directly to dashboard
-              window.location.href = '/dashboard';
-            }
-          }
+          // Set redirect path instead of navigating directly
+          // This will be used by components to navigate safely
+          setRedirectPath(getRedirectPath());
           
           return true;
         }
@@ -443,15 +441,16 @@ export const AuthProvider = ({ children }) => {
     return isConnected;
   };
 
-  // Create value object with auth state and functions
+  // Prepare the auth context value
   const value = {
     user,
-    token,
     loading,
     error,
+    token,
     userPersona,
     isAuthenticated,
     apiConnected, // Expose API connection status
+    redirectPath, // Expose the redirect path
     login,
     register,
     logout: handleLogout,

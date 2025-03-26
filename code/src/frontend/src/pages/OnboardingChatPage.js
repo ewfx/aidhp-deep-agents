@@ -43,7 +43,9 @@ const MessageContainer = styled(Box)(({ theme }) => ({
   alignItems: 'flex-start',
 }));
 
-const MessageContent = styled(Box)(({ theme, isUserMessage }) => ({
+const MessageContent = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'isUserMessage'
+})(({ theme, isUserMessage }) => ({
   padding: theme.spacing(2),
   borderRadius: theme.spacing(2),
   maxWidth: '70%',
@@ -69,6 +71,19 @@ const ProgressBar = styled(LinearProgress)(({ theme }) => ({
   marginBottom: theme.spacing(2),
 }));
 
+// Wrapper component to properly handle props
+const MessageContentWrapper = ({ isUserMessage, children, ...props }) => {
+  return (
+    <MessageContent 
+      isUserMessage={isUserMessage} 
+      component="div" 
+      {...props}
+    >
+      {children}
+    </MessageContent>
+  );
+};
+
 const OnboardingChatPage = () => {
   // State for chat messages
   const [messages, setMessages] = useState([]);
@@ -83,7 +98,7 @@ const OnboardingChatPage = () => {
   
   // Reference for auto-scrolling to bottom
   const messagesEndRef = useRef(null);
-  const { user } = useAuth();
+  const { user, saveUserPersona } = useAuth();
   const navigate = useNavigate();
 
   // Constants
@@ -92,12 +107,39 @@ const OnboardingChatPage = () => {
 
   // Initialize chat on component mount
   useEffect(() => {
-    // Check if user has already completed onboarding
-    const onboardingCompleted = localStorage.getItem('onboarding_completed');
+    // Debug the API object structure
+    console.log('API object structure:', api);
     
-    if (onboardingCompleted === 'true') {
-      // User has already completed onboarding, redirect to dashboard
-      navigate('/dashboard');
+    if (!api.onboarding) {
+      console.warn('API onboarding methods are missing! This will cause fallback to mock data.');
+      console.log('Available API methods:', Object.keys(api));
+      
+      // Try to provide helpful information for debugging
+      if (config.features.enableMockData) {
+        console.log('Mock data is enabled, will use fallback mock responses');
+      } else {
+        console.error('Mock data is disabled, but API onboarding methods are missing!');
+        console.log('Consider enabling mock data in config.features.enableMockData');
+      }
+    } else {
+      console.log('API onboarding methods found:', Object.keys(api.onboarding));
+    }
+    
+    // Check if user has already completed onboarding
+    const checkOnboardingStatus = () => {
+      const onboardingCompleted = localStorage.getItem('onboarding_completed');
+      
+      if (onboardingCompleted === 'true') {
+        // User has already completed onboarding, redirect to dashboard
+        console.log('Onboarding already completed, redirecting to dashboard');
+        navigate('/dashboard');
+        return true;
+      }
+      return false;
+    };
+    
+    // If already completed, don't proceed with the rest of the initialization
+    if (checkOnboardingStatus()) {
       return;
     }
     
@@ -114,12 +156,18 @@ const OnboardingChatPage = () => {
         setProgress(calculateProgress(parsedSession.turnCount || 0));
       } catch (e) {
         console.error('Error parsing saved onboarding session:', e);
-        startOnboarding();
+        // Start onboarding on next tick to avoid state updates during render
+        setTimeout(() => {
+          startOnboarding();
+        }, 0);
       }
     } else {
-      startOnboarding();
+      // Start onboarding on next tick to avoid state updates during render
+      setTimeout(() => {
+        startOnboarding();
+      }, 0);
     }
-  }, [navigate]);
+  }, []); // Empty dependency array - only run once on mount
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -145,8 +193,34 @@ const OnboardingChatPage = () => {
       
       setMessages([welcomeMessage]);
       
-      // Call API to start onboarding
-      const response = await callOnboardingAPI('start');
+      let response;
+      let useMockData = config.features.enableMockData;
+      
+      // Attempt to use the API if mock data is not enabled
+      if (!useMockData) {
+        try {
+          // Check if API client and onboarding methods are available
+          if (!api || !api.onboarding) {
+            console.warn('API onboarding methods not available, falling back to mock data');
+            useMockData = true;
+          } else {
+            // Call API to start onboarding
+            console.log('Calling API to start onboarding session');
+            const apiResponse = await api.onboarding.startSession();
+            console.log('API response for start session:', apiResponse);
+            response = apiResponse.data;
+          }
+        } catch (apiError) {
+          console.error('Error calling API, falling back to mock data:', apiError);
+          useMockData = true;
+        }
+      }
+      
+      // Use mock data if enabled or if API failed
+      if (useMockData) {
+        console.log('Using mock data for onboarding');
+        response = await mockOnboardingResponse('start');
+      }
       
       if (response && response.session_id) {
         setSessionId(response.session_id);
@@ -178,37 +252,6 @@ const OnboardingChatPage = () => {
       setError('Failed to start onboarding process. Please try refreshing the page.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Call the onboarding API
-  const callOnboardingAPI = async (endpoint, message = '') => {
-    // For development, simulate API responses if mock data is enabled
-    if (config.features.enableMockData) {
-      return mockOnboardingResponse(endpoint, message);
-    }
-    
-    try {
-      let response;
-      
-      switch (endpoint) {
-        case 'start':
-          response = await api.onboarding.startSession();
-          break;
-        case 'update':
-          response = await api.onboarding.updateSession(sessionId, message);
-          break;
-        case 'complete':
-          response = await api.onboarding.completeSession(sessionId);
-          break;
-        default:
-          throw new Error('Invalid endpoint');
-      }
-      
-      return response;
-    } catch (error) {
-      console.error(`Error calling onboarding API (${endpoint}):`, error);
-      throw error;
     }
   };
 
@@ -279,59 +322,127 @@ const OnboardingChatPage = () => {
 
   // Handle sending a message
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || loading) return;
-    
-    // Add user message to UI
-    const userMessage = {
-      text: inputMessage,
-      sender: 'user',
-      timestamp: new Date().toISOString()
-    };
-    
-    setMessages(prevMessages => [...prevMessages, userMessage]);
-    setInputMessage('');
-    setLoading(true);
-    setIsTyping(true);
-    
+    if (!inputMessage.trim()) return;
+
     try {
-      // Update the conversation with user's message
-      const updatedMessages = [...messages, userMessage];
-      const newTurnCount = turnCount + 1;
-      setTurnCount(newTurnCount);
-      setProgress(calculateProgress(newTurnCount));
+      console.log('Sending message:', inputMessage);
       
-      // Call API to get next question or complete onboarding
-      const response = await callOnboardingAPI('update', inputMessage);
-      
-      const botResponse = {
-        text: response.text,
-        sender: 'bot',
+      // Add user message to chat
+      const userMessage = {
+        text: inputMessage,
+        sender: 'user',
         timestamp: new Date().toISOString()
       };
       
-      // Add bot response to UI
-      setMessages(prevMessages => [...prevMessages, botResponse]);
+      console.log('Adding user message to chat:', userMessage);
+      setMessages(prevMessages => [...prevMessages, userMessage]);
+      setInputMessage('');
+      setLoading(true);
+      setError('');
       
-      // Save updated conversation to session storage
-      saveSessionToStorage(
-        [...updatedMessages, botResponse],
-        sessionId,
-        response.complete,
-        newTurnCount
-      );
+      let apiResponse;
+      let useMockData = config.features.enableMockData;
       
-      // Check if onboarding is complete
-      if (response.complete) {
-        setIsComplete(true);
-        // Set the completion flag to prevent further questions
-        localStorage.setItem('onboarding_completed', 'true');
+      // Attempt to use the API if mock data is not enabled
+      if (!useMockData) {
+        try {
+          // Check if API onboarding is available
+          if (!api || !api.onboarding) {
+            console.warn('API onboarding methods not available, falling back to mock data');
+            useMockData = true;
+          } else {
+            // Determine if this is the first message or an update
+            if (!sessionId) {
+              console.log('First user message - starting new session');
+              
+              // Call API to start onboarding
+              const response = await api.onboarding.startSession();
+              console.log('Start session response:', response);
+              apiResponse = response.data;
+              
+              if (apiResponse && apiResponse.session_id) {
+                setSessionId(apiResponse.session_id);
+                console.log('Set new session ID:', apiResponse.session_id);
+              }
+            } else {
+              console.log('Updating existing session:', sessionId);
+              
+              // Call API to update onboarding
+              const response = await api.onboarding.updateSession(sessionId, inputMessage);
+              console.log('Update session response:', response);
+              apiResponse = response.data;
+            }
+          }
+        } catch (apiError) {
+          console.error('Error calling API, falling back to mock data:', apiError);
+          useMockData = true;
+        }
+      }
+      
+      // Use mock data if enabled or if API failed
+      if (useMockData) {
+        console.log('Using mock data for onboarding message');
+        if (!sessionId) {
+          // First message - generate a session ID
+          const mockSessionId = 'mock-session-' + Date.now();
+          setSessionId(mockSessionId);
+          apiResponse = await mockOnboardingResponse('start');
+        } else {
+          apiResponse = await mockOnboardingResponse('update', inputMessage);
+        }
+      }
+      
+      // Process response and add bot message
+      if (apiResponse && (apiResponse.text || apiResponse.response)) {
+        const botMessage = {
+          text: apiResponse.text || apiResponse.response,
+          sender: 'bot',
+          timestamp: new Date().toISOString()
+        };
+        
+        console.log('Adding bot response to chat:', botMessage);
+        setMessages(prevMessages => [...prevMessages, botMessage]);
+        
+        // Check if onboarding is complete
+        if (apiResponse.is_complete || apiResponse.complete) {
+          console.log('Onboarding is complete, finalizing session');
+          setIsComplete(true);
+          
+          if (!useMockData) {
+            await finalizeOnboarding(sessionId);
+          } else {
+            // Mock completion
+            localStorage.setItem('onboarding_completed', 'true');
+            // Redirect after a delay
+            setTimeout(() => {
+              navigate('/dashboard');
+            }, 3000);
+          }
+        }
+        
+        // Update turn count and progress
+        const newTurnCount = turnCount + 1;
+        setTurnCount(newTurnCount);
+        setProgress(calculateProgress(newTurnCount));
+        
+        // Save session to storage
+        saveSessionToStorage([...messages, userMessage, botMessage], sessionId, 
+          apiResponse.is_complete || apiResponse.complete || false, newTurnCount);
+      } else {
+        console.warn('No text in API response:', apiResponse);
+        setError('We encountered an issue. Please try again.');
       }
     } catch (error) {
       console.error('Error sending message:', error);
       setError('Failed to send message. Please try again.');
+      
+      // Add more detailed error information
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+      }
     } finally {
       setLoading(false);
-      setIsTyping(false);
     }
   };
 
@@ -343,13 +454,39 @@ const OnboardingChatPage = () => {
     }
   };
 
-  // Finalize onboarding
+  // Handle complete onboarding button click
   const handleCompleteOnboarding = async () => {
     try {
       setLoading(true);
       
-      // Call API to complete onboarding and get final message
-      const response = await callOnboardingAPI('complete');
+      let response;
+      let useMockData = config.features.enableMockData;
+      
+      // Attempt to use the API if mock data is not enabled
+      if (!useMockData) {
+        try {
+          // Check if API client is available
+          if (!api || !api.onboarding) {
+            console.warn('API onboarding methods not available, falling back to mock data');
+            useMockData = true;
+          } else {
+            // Call API to complete onboarding
+            console.log('Calling API to complete onboarding session:', sessionId);
+            const apiResponse = await api.onboarding.completeSession(sessionId);
+            console.log('Complete session response:', apiResponse);
+            response = apiResponse.data;
+          }
+        } catch (apiError) {
+          console.error('Error calling API, falling back to mock data:', apiError);
+          useMockData = true;
+        }
+      }
+      
+      // Use mock data if enabled or if API failed
+      if (useMockData) {
+        console.log('Using mock data for completing onboarding');
+        response = await mockOnboardingResponse('complete');
+      }
       
       if (response) {
         // Add final message if provided
@@ -367,15 +504,100 @@ const OnboardingChatPage = () => {
         localStorage.setItem('onboarding_completed', 'true');
         
         // Redirect to dashboard after a short delay
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 2000);
+        // Use navigate directly instead of setTimeout to avoid memory leaks and ensure cleanup
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error('Error completing onboarding:', error);
       setError('Failed to complete onboarding. Please try again.');
+      
+      // Fall back to local completion if API fails completely
+      localStorage.setItem('onboarding_completed', 'true');
+      
+      // Redirect to dashboard immediately on error
+      navigate('/dashboard');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Finalize the onboarding process
+  const finalizeOnboarding = async (sessionId) => {
+    try {
+      console.log('Finalizing onboarding for session:', sessionId);
+      
+      let completeResponse;
+      let useMockData = config.features.enableMockData;
+      
+      // Attempt to use the API if mock data is not enabled
+      if (!useMockData) {
+        try {
+          // Check if API client is available
+          if (!api || !api.onboarding) {
+            console.warn('API onboarding methods not available, falling back to mock data');
+            useMockData = true;
+          } else {
+            // Call API to complete the onboarding session
+            const response = await api.onboarding.completeSession(sessionId);
+            console.log('Complete session response:', response);
+            completeResponse = response.data;
+          }
+        } catch (apiError) {
+          console.error('Error calling API, falling back to mock data:', apiError);
+          useMockData = true;
+        }
+      }
+      
+      // Use mock data if enabled or if API failed
+      if (useMockData) {
+        console.log('Using mock data for finalizing onboarding');
+        completeResponse = await mockOnboardingResponse('complete');
+      }
+      
+      // Mark onboarding as completed in local storage
+      localStorage.setItem('onboarding_completed', 'true');
+      
+      // Optionally, update the user context to reflect completion
+      if (saveUserPersona) {
+        const userPersona = completeResponse?.user_persona || {
+          // Default values if the API doesn't return a persona
+          risk_tolerance: 'moderate',
+          goals: ['retirement', 'emergency_fund'],
+          time_horizon: 'medium',
+          completed_at: new Date().toISOString()
+        };
+        
+        console.log('Saving user persona:', userPersona);
+        saveUserPersona(userPersona);
+      }
+      
+      // Add final message if provided
+      if (completeResponse && completeResponse.text) {
+        const finalMessage = {
+          text: completeResponse.text,
+          sender: 'bot',
+          timestamp: new Date().toISOString()
+        };
+        
+        setMessages(prevMessages => [...prevMessages, finalMessage]);
+      }
+      
+      // Show completion message or redirect
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Error finalizing onboarding:', error);
+      setError('There was an issue completing your profile. Please try again.');
+      
+      // Fall back to local completion if API fails completely
+      localStorage.setItem('onboarding_completed', 'true');
+      
+      // Redirect after a delay even if there's an error
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 5000);
     }
   };
 
@@ -413,11 +635,11 @@ const OnboardingChatPage = () => {
           <MessagesBox>
             {messages.map((message, index) => (
               <MessageContainer key={index}>
-                <MessageContent isUserMessage={message.sender === 'user'}>
+                <MessageContentWrapper isUserMessage={message.sender === 'user'}>
                   <Typography variant="body1">
                     {message.text}
                   </Typography>
-                </MessageContent>
+                </MessageContentWrapper>
               </MessageContainer>
             ))}
             

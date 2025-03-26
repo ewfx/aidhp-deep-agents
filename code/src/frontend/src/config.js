@@ -2,41 +2,52 @@
 
 const environment = process.env.NODE_ENV || 'development';
 
-// Configuration for different environments
-const envConfig = {
-  development: {
-    baseApiUrl: 'http://localhost:8000', // Explicitly set to backend server
-    debug: true
-  },
-  production: {
-    baseApiUrl: '',  // Base URL without /api in production
-    debug: false
+// Calculate the API base URL based on environment
+const getApiUrl = () => {
+  if (environment === 'production') {
+    return '/api';
   }
+  return 'http://localhost:8000';
 };
 
 // Export the configuration
 export const config = {
-  // Base URL for API requests
-  apiUrl: envConfig[environment].baseApiUrl,
+  env: environment,
   
-  // API structure for the API module
-  api: {
-    baseUrl: envConfig[environment].baseApiUrl
+  // Top-level API URL for easier access
+  apiUrl: getApiUrl(),
+  
+  // Environment-specific settings
+  development: {
+    apiUrl: 'http://localhost:8000',
+    debug: true
+  },
+  
+  production: {
+    apiUrl: '/api',
+    debug: false
   },
   
   // Application settings
   app: {
-    name: 'Wells Fargo Financial Assistant',
+    name: 'Financial Advisor',
     version: '1.0.0',
     logoUrl: '/logo.png'
   },
   
+  // API settings
+  api: {
+    baseUrl: getApiUrl(),
+    timeout: 15000, // 15 seconds
+    retryAttempts: 3
+  },
+  
   // Authentication settings
   auth: {
-    tokenStorageKey: 'token',
-    userStorageKey: 'currentUser',
-    refreshTokenKey: 'refreshToken',
-    expiryKey: 'tokenExpiry'
+    tokenStorageKey: 'auth_token',
+    userStorageKey: 'user_data',
+    refreshTokenKey: 'refresh_token',
+    tokenExpiry: 86400 // 24 hours in seconds
   },
   
   // Chat interface settings
@@ -80,20 +91,22 @@ export const config = {
   
   // Feature flags
   features: {
-    enableMockData: false, // Disable mock data to use the real backend
-    enableDebug: envConfig[environment].debug
+    enableDebug: true,
+    enableMockData: true, // Enable mock data as fallback when API is unavailable
+    showNewFeatureBadge: true,
+    useDarkMode: false
   },
   
   // Services (for component-specific integrations)
   services: {
     understander: {
-      url: envConfig[environment].baseApiUrl
+      url: process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:8000'
     }
   },
   
   // Debug settings
   debug: {
-    logApiCalls: envConfig[environment].debug
+    logApiCalls: process.env.NODE_ENV === 'development'
   },
   
   // UI Configuration

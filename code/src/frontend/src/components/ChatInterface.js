@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Container, 
   Paper, 
@@ -20,7 +20,8 @@ import {
 import { 
   Send as SendIcon, 
   AutoAwesome as AutoAwesomeIcon,
-  AttachFile as AttachFileIcon
+  AttachFile as AttachFileIcon,
+  ExpandMore as ExpandMoreIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 import { config } from '../config';
@@ -42,22 +43,12 @@ const MessageContainer = styled(Box)(({ theme }) => ({
 }));
 
 const MessageContent = styled(Box)(({ theme, isUserMessage }) => ({
-  padding: theme.spacing(1.5, 2),
-  borderRadius: isUserMessage 
-    ? theme.shape.borderRadius * 2 + ' ' + theme.shape.borderRadius * 2 + ' 0 ' + theme.shape.borderRadius * 2
-    : theme.shape.borderRadius * 2 + ' ' + theme.shape.borderRadius * 2 + ' ' + theme.shape.borderRadius * 2 + ' 0',
+  padding: theme.spacing(1.5),
+  borderRadius: theme.shape.borderRadius,
   maxWidth: '80%',
   wordBreak: 'break-word',
-  backgroundColor: isUserMessage ? theme.palette.primary.main : theme.palette.background.paper,
+  backgroundColor: isUserMessage ? theme.palette.primary.light : theme.palette.grey[100],
   color: isUserMessage ? theme.palette.primary.contrastText : theme.palette.text.primary,
-  boxShadow: theme.shadows[1],
-  marginLeft: isUserMessage ? 'auto' : '10px',
-  marginRight: isUserMessage ? '10px' : 'auto',
-  position: 'relative',
-  transition: 'all 0.2s ease',
-  '&:hover': {
-    boxShadow: theme.shadows[2],
-  },
 }));
 
 const ChatContainer = styled(Paper)(({ theme }) => ({
@@ -117,413 +108,289 @@ const FeedbackContainer = styled(Box)(({ theme }) => ({
   marginTop: theme.spacing(1),
 }));
 
-const ChatInterface = ({ isOnboarding = false, isFullWidth = false }) => {
-  // State for chat messages
+const ChatHeader = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: theme.spacing(1),
+  borderBottom: `1px solid ${theme.palette.divider}`,
+}));
+
+const ScrollDownButton = styled(IconButton)(({ theme }) => ({
+  position: 'absolute',
+  bottom: theme.spacing(2),
+  right: theme.spacing(2),
+}));
+
+const ChatInputWrapper = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  padding: theme.spacing(1),
+  borderTop: `1px solid ${theme.palette.divider}`,
+}));
+
+const MessageWrapper = styled(MessageContainer)(({ isUser }) => ({
+  flexDirection: isUser ? 'row-reverse' : 'row',
+}));
+
+const MessageContentWrapper = ({ isUserMessage, children, ...props }) => {
+  return (
+    <MessageContent 
+      isUserMessage={isUserMessage} 
+      component="div" 
+      {...props}
+    >
+      {children}
+    </MessageContent>
+  );
+};
+
+const ChatInterface = ({ 
+  isFullWidth = false, 
+  productContext = null,
+  productId = null,
+  initialMessage = null
+}) => {
+  const { user } = useAuth();
+  const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [sessionId, setSessionId] = useState('');
-  const [isComplete, setIsComplete] = useState(false);
-  const [userPersona, setUserPersona] = useState(null);
-  const [recommendations, setRecommendations] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
-  
-  // Reference for auto-scrolling to bottom
+  const [error, setError] = useState(null);
+  const [showScrollDown, setShowScrollDown] = useState(false);
   const messagesEndRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const { saveUserPersona, isAuthenticated, user, login, getToken } = useAuth();
-
-  // Initialize chat with welcome message
-  useEffect(() => {
-    // Load existing session or start new one
-    const savedSession = sessionStorage.getItem(config.chat.sessionStorageKey);
-    
-    if (savedSession) {
-      try {
-        const parsedSession = JSON.parse(savedSession);
-        setMessages(parsedSession.messages || []);
-        setSessionId(parsedSession.sessionId || '');
-        setIsComplete(parsedSession.isComplete || false);
-      } catch (e) {
-        console.error('Error parsing saved session:', e);
-        initializeChat();
-      }
-    } else {
-      initializeChat();
-    }
-  }, []);
-
-  // Function to initialize a new chat
-  const initializeChat = async () => {
-    // Check for existing session in session storage
-    const savedSession = sessionStorage.getItem(config.chat.sessionStorageKey);
-    
-    if (savedSession) {
-      try {
-        const session = JSON.parse(savedSession);
-        setMessages(session.messages || []);
-        setSessionId(session.sessionId);
-        setIsComplete(session.isComplete || false);
-      } catch (error) {
-        console.error('Error parsing saved session:', error);
-        // If there's an error parsing the saved session, start fresh
-        sessionStorage.removeItem(config.chat.sessionStorageKey);
-        await startNewChat();
-      }
-    } else {
-      await startNewChat();
+  const messagesContainerRef = useRef(null);
+  const [apiData, setApiData] = useState(null);
+  const [hasInitialQuestion, setHasInitialQuestion] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [sessionId, setSessionId] = useState(null);
+  const [recommendation, setRecommendation] = useState(null);
+  
+  // Update messages on scroll
+  const handleScroll = () => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      const isScrolledUp = scrollHeight - scrollTop - clientHeight > 100;
+      setShowScrollDown(isScrolledUp);
     }
   };
 
-  // Start a new chat session
-  const startNewChat = async () => {
-    // Add welcome message
-    const welcomeMessage = {
-      text: config.chat.welcomeMessage,
-      sender: 'bot',
-      timestamp: new Date().toISOString()
-    };
-    
-    setMessages([welcomeMessage]);
-    
-    // Initialize chat with backend service
-    if (!config.features.enableMockData) {
+  // Fetch chat history
+  useEffect(() => {
+    const fetchHistory = async () => {
       try {
-        // Send empty message to start session
-        const response = await api.chat.sendMessage('', null);
+        setIsTyping(true);
         
-        if (response && response.session_id) {
-          setSessionId(response.session_id);
+        // If we have a product ID, use it to fetch product-specific history
+        const historyEndpoint = productId 
+          ? `/chat/history/${productId}` 
+          : '/chat/history';
+        
+        if (config.features.enableMockData) {
+          // Simulate API delay
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
-          // Add the bot's first question
-          if (response.text || response.response) {
-            setMessages(prevMessages => [
-              ...prevMessages,
-              {
-                text: response.text || response.response,
-                sender: 'bot',
-                timestamp: new Date().toISOString()
-              }
-            ]);
+          // Default welcome message if there's no history
+          const initialMessages = [
+            {
+              id: '1',
+              content: initialMessage || productContext || "Hello! I'm your AI financial assistant. How can I help you today?",
+              isUser: false,
+              timestamp: new Date().toISOString(),
+              recommendations: []
+            }
+          ];
+          
+          setMessages(initialMessages);
+          setSessionId('mock-session-id');
+        } else {
+          // Real API call would go here
+          const response = await api.chat.getHistory(historyEndpoint);
+          
+          if (response.data.messages && response.data.messages.length > 0) {
+            setMessages(response.data.messages);
+            setSessionId(response.data.sessionId);
+          } else {
+            // No history found, set initial welcome message
+            const welcomeMessage = {
+              id: '1',
+              content: initialMessage || productContext || "Hello! I'm your AI financial assistant. How can I help you today?",
+              isUser: false,
+              timestamp: new Date().toISOString(),
+              recommendations: []
+            };
+            setMessages([welcomeMessage]);
+            
+            // Create a new session
+            const sessionResponse = await api.chat.startSession();
+            setSessionId(sessionResponse.data.sessionId);
           }
-          
-          // Save to session storage
-          saveToSessionStorage(
-            [welcomeMessage, {
-              text: response.text || response.response,
-              sender: 'bot',
-              timestamp: new Date().toISOString()
-            }],
-            response.session_id,
-            false
-          );
         }
       } catch (error) {
-        console.error('Error initializing chat:', error);
-        setError('Failed to initialize chat. Please try again.');
+        console.error('Error fetching chat history:', error);
+        setError('Failed to load chat history. Please try refreshing the page.');
+        
+        // Fallback to a default welcome message
+        const welcomeMessage = {
+          id: '1',
+          content: initialMessage || productContext || "Hello! I'm your AI financial assistant. How can I help you today?",
+          isUser: false,
+          timestamp: new Date().toISOString(),
+          recommendations: []
+        };
+        setMessages([welcomeMessage]);
+        setSessionId('fallback-session-id');
+      } finally {
+        setIsTyping(false);
       }
-    }
-  };
-
-  // Save chat session to session storage
-  const saveToSessionStorage = (messages, sessionId, isComplete) => {
-    const sessionData = {
-      messages,
-      sessionId,
-      isComplete,
-      lastUpdated: new Date().toISOString()
     };
-    
-    sessionStorage.setItem(config.chat.sessionStorageKey, JSON.stringify(sessionData));
-  };
+
+    fetchHistory();
+  }, [productId, initialMessage, productContext]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollToBottom();
   }, [messages]);
 
-  // Handle sending a message
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
-    
-    // Add user message to chat
-    const userMessage = {
-      text: inputMessage,
-      sender: 'user',
-      timestamp: new Date().toISOString()
-    };
-    
-    console.log('Sending user message:', userMessage);
-    setMessages(prevMessages => [...prevMessages, userMessage]);
-    setInputMessage('');
-    setLoading(true);
-    setIsTyping(true);
-    setError('');
-    
-    // For demo purposes with mock data
-    if (config.features.enableMockData) {
-      console.log('Mock data enabled, returning mock response');
-      setTimeout(() => {
-        const mockResponse = {
-          text: `Thanks for your message: "${inputMessage}". I'm a mock response as we're in development mode. In production, I would connect to our AI backend.`,
-          sender: 'bot',
-          timestamp: new Date().toISOString()
-        };
-        
-        setMessages(prevMessages => [...prevMessages, mockResponse]);
-        setLoading(false);
-        
-        // Save updated chat to session storage
-        saveToSessionStorage(
-          [...messages, userMessage, mockResponse],
-          sessionId || 'mock-session-id',
-          false
-        );
-      }, 1000);
-      return;
-    }
-    
-    try {
-      // Try to ensure we have a valid token before making the request
-      await getToken();
-      
-      console.log('Sending chat message to backend:', inputMessage, 'with session ID:', sessionId);
-      // Send message to backend service using our API client
-      const response = await api.chat.sendMessage(inputMessage, sessionId);
-      console.log('Received response from chat API:', response);
-      
-      // Update session ID if needed
-      if (response && response.session_id) {
-        console.log('Setting session ID from response:', response.session_id);
-        setSessionId(response.session_id);
-      }
-      
-      // Add bot response to chat
-      if (response && (response.text || response.response)) {
-        console.log('Adding bot response to chat:', response.text || response.response);
-        const botMessage = {
-          text: response.text || response.response,
-          sender: 'bot',
-          timestamp: new Date().toISOString()
-        };
-        
-        setMessages(prevMessages => [...prevMessages, botMessage]);
-        
-        // Check if dialogue is complete
-        if (response.state && response.state.is_complete) {
-          console.log('Dialog is complete, extracting user persona');
-          setIsComplete(true);
-          
-          // Extract user persona
-          extractUserPersona(response.session_id);
-        }
-        
-        // Save updated chat to session storage
-        saveToSessionStorage(
-          [...messages, userMessage, botMessage],
-          response.session_id,
-          response.state?.is_complete || false
-        );
-        
-        // Update recommendations, but only show a limited number (1-2) and only when there's high confidence
-        // Only show recommendations every 3-4 messages to avoid overwhelming the user
-        if (response.recommendations && response.recommendations.length > 0) {
-          console.log('Got recommendations from response:', response.recommendations);
-          // Only show recommendations occasionally, not for every message
-          // Use the message count as a heuristic
-          const messageCount = messages.length + 2; // +2 for the current user message and bot response
-          const shouldShowRecommendation = 
-            messageCount > 5 && // Only after a few exchanges
-            messageCount % 4 === 0 && // Only every 4th message
-            response.recommendations.some(rec => rec.confidence > 0.7); // Only if there's a high confidence recommendation
-            
-          if (shouldShowRecommendation) {
-            // Limit to at most 2 highest confidence recommendations
-            const limitedRecommendations = response.recommendations
-              .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
-              .slice(0, 2);
-            
-            console.log('Setting limited recommendations:', limitedRecommendations);
-            setRecommendations(limitedRecommendations);
-          } else {
-            // Don't show recommendations for this message
-            setRecommendations([]);
-          }
-        }
-      } else {
-        console.warn('No response text received from API:', response);
-        // Add fallback message if no text in response
-        setMessages(prevMessages => [
-          ...prevMessages,
-          {
-            text: "I received your message but didn't get a proper response. Please try again.",
-            sender: 'bot',
-            timestamp: new Date().toISOString(),
-            isError: true
-          }
-        ]);
-      }
-    } catch (err) {
-      console.error('Error sending message:', err);
-      
-      // If token expired (401), refresh it and try again
-      if (err.response && err.response.status === 401) {
-        console.log('Token expired (401), attempting to refresh');
-        try {
-          // Force refresh the token
-          await login(user?.user_id || 'testuser', 'password', true);
-          
-          // Retry the message with new token
-          console.log('Retrying message with new token');
-          const response = await api.chat.sendMessage(inputMessage, sessionId);
-          console.log('Received response on retry:', response);
-          
-          // Add bot response to chat
-          if (response && (response.text || response.response)) {
-            console.log('Adding bot response after token refresh:', response.text || response.response);
-            const botMessage = {
-              text: response.text || response.response,
-              sender: 'bot',
-              timestamp: new Date().toISOString()
-            };
-            
-            setMessages(prevMessages => [...prevMessages, botMessage]);
-            
-            // Check if dialogue is complete
-            if (response.state && response.state.is_complete) {
-              setIsComplete(true);
-              
-              // Extract user persona
-              extractUserPersona(response.session_id);
-            }
-            
-            // Save updated chat to session storage
-            saveToSessionStorage(
-              [...messages, userMessage, botMessage],
-              response.session_id,
-              response.state?.is_complete || false
-            );
-            
-            // Update recommendations
-            if (response.recommendations && response.recommendations.length > 0) {
-              setRecommendations(response.recommendations);
-            }
-          } else {
-            console.warn('No response text received on retry');
-            // Add fallback message if no text in response
-            setMessages(prevMessages => [
-              ...prevMessages,
-              {
-                text: "I received your message after reconnecting but didn't get a proper response. Please try again.",
-                sender: 'bot',
-                timestamp: new Date().toISOString(),
-                isError: true
-              }
-            ]);
-          }
-        } catch (retryErr) {
-          console.error('Retry after token refresh failed:', retryErr);
-          // If retry fails, show error
-          setMessages(prev => [
-            ...prev, 
-            {
-              text: "I'm sorry, I'm having trouble connecting to my services right now. Please try again later.",
-              sender: 'bot',
-              timestamp: new Date().toISOString(),
-              isError: true
-            }
-          ]);
-          setError("Authentication error. Please log out and log in again.");
-        }
-      } else {
-        console.error('Other error sending message:', err);
-        // Show error message
-        setMessages(prev => [
-          ...prev, 
-          {
-            text: "I apologize, but I'm experiencing some technical difficulties. Please try again later.",
-            sender: 'bot',
-            timestamp: new Date().toISOString(),
-            isError: true
-          }
-        ]);
-        setError("Unable to process your request at this time.");
-      }
-    } finally {
-      setLoading(false);
-      setIsTyping(false);
+  // Smooth scroll to bottom
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
-  // Extract user persona from dialogue history
-  const extractUserPersona = async (sid) => {
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e?.preventDefault();
+    if (!input.trim()) return;
+
     try {
-      // This would call to the backend to get user profile data
-      // For now, we'll create a mock persona for demonstration
-      const mockPersona = {
-        age: 35,
-        income: '75000-100000',
-        job: 'Software Engineer',
-        goals: ['Retirement', 'Home Purchase'],
-        risk_tolerance: 'Moderate'
+      // Add user message to chat
+      const userMessage = {
+        id: `user-${Date.now()}`,
+        content: input,
+        isUser: true,
+        timestamp: new Date().toISOString(),
+        recommendations: []
       };
       
-      setUserPersona(mockPersona);
-      return mockPersona;
+      setMessages(prevMessages => [...prevMessages, userMessage]);
+      setInput('');
+      setIsTyping(true);
+      setError(null);
+      
+      // Prepare context for the API request
+      let context = '';
+      
+      // If we have product-specific context, include it
+      if (productContext) {
+        context = productContext;
+      }
+      
+      // Make API request
+      if (config.features.enableMockData) {
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Simulate API response
+        const mockResponses = [
+          "That's a great question about your finances. Based on your profile and current financial situation, I would recommend considering a high-yield savings account for your emergency fund. This will give you both liquidity and a better return than a traditional savings account.",
+          "I understand your concern about market volatility. It's important to remember that market fluctuations are normal, and investing should be viewed with a long-term perspective. Your portfolio is already well-diversified, which helps mitigate risk.",
+          "When it comes to retirement planning, you're on the right track by maxing out your 401(k) contributions. Given your current age and retirement goals, you might also consider opening a Roth IRA to diversify your tax treatment in retirement.",
+          "Regarding your question about debt repayment, prioritizing high-interest debt like credit cards would give you the best financial return. Once those are paid off, you can focus on lower-interest debts while continuing to invest."
+        ];
+        
+        let responseText = mockResponses[Math.floor(Math.random() * mockResponses.length)];
+        
+        // If we're in a product-specific context, tailor the response
+        if (productContext) {
+          responseText = `Based on the specific features of this financial product and your current situation, ${responseText.toLowerCase()}`;
+        }
+        
+        // Add a random recommendation 25% of the time
+        const includeRecommendation = Math.random() < 0.25;
+        
+        let recommendations = [];
+        if (includeRecommendation) {
+          recommendations = [
+            {
+              id: `rec-${Date.now()}`,
+              name: "High-Yield Savings Account",
+              description: "Earn more interest on your savings with our premium account.",
+              rating: 4.5,
+              link: "#"
+            }
+          ];
+        }
+        
+        const assistantMessage = {
+          id: `assistant-${Date.now()}`,
+          content: responseText,
+          isUser: false,
+          timestamp: new Date().toISOString(),
+          recommendations: recommendations
+        };
+        
+        setMessages(prevMessages => [...prevMessages, assistantMessage]);
+      } else {
+        // Real API call
+        const response = await api.chat.sendMessage({
+          message: input,
+          sessionId: sessionId,
+          context: context,
+          productId: productId
+        });
+        
+        const assistantMessage = {
+          id: response.data.id || `assistant-${Date.now()}`,
+          content: response.data.response,
+          isUser: false,
+          timestamp: response.data.timestamp || new Date().toISOString(),
+          recommendations: response.data.recommendations || []
+        };
+        
+        setMessages(prevMessages => [...prevMessages, assistantMessage]);
+        
+        // Update session ID if provided in response
+        if (response.data.sessionId) {
+          setSessionId(response.data.sessionId);
+        }
+        
+        // If there are any new recommendations, update state
+        if (response.data.recommendations && response.data.recommendations.length > 0) {
+          setRecommendation(response.data.recommendations[0]);
+        }
+      }
     } catch (error) {
-      console.error('Error extracting user persona:', error);
-      setError('Failed to create your financial profile. Please try again.');
-      return null;
+      console.error('Error sending message:', error);
+      setError('Failed to send message. Please try again.');
+    } finally {
+      setIsTyping(false);
+      scrollToBottom();
     }
   };
 
-  // Handle key press (Enter to send)
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+  // Handle input change
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+  };
+
+  // Handle initial question
+  useEffect(() => {
+    if (apiData && !hasInitialQuestion) {
+      setHasInitialQuestion(true);
+      // Logic for setting initial question based on API data
     }
-  };
+  }, [apiData, hasInitialQuestion]);
 
-  // Handle retrying if there was an error
-  const handleRetry = () => {
-    setError('');
-    // The last message would be the user's, so we try to resend it
-    if (messages.length > 0 && messages[messages.length - 1].sender === 'user') {
-      setInputMessage(messages[messages.length - 1].text);
-      // Remove the last message since we're retrying it
-      setMessages(prevMessages => prevMessages.slice(0, -1));
-    }
-  };
-
-  // Reset the chat
-  const handleResetChat = () => {
-    // Clear session storage
-    sessionStorage.removeItem(config.chat.sessionStorageKey);
-    
-    // Reinitialize chat
-    initializeChat();
-  };
-
-  const handleFileButtonClick = () => {
-    fileInputRef.current.click();
-  };
-
-  const handleFileSelect = (e) => {
-    // TODO: Implement file handling
-    console.log('File selected:', e.target.files[0]);
-  };
-
-  const handleFeedback = (messageId, isPositive) => {
-    // TODO: Implement feedback API call
-    console.log(`Feedback for message ${messageId}: ${isPositive ? 'positive' : 'negative'}`);
-  };
+  // Container width style based on isFullWidth prop
+  const containerWidthStyle = isFullWidth 
+    ? { width: '100%' } 
+    : { width: { xs: '100%', sm: 'auto' } };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* App Bar - Only show in standalone mode */}
-      {!isOnboarding && false && (
+      {!isFullWidth && (
         <AppBar position="static">
           <Toolbar>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
@@ -535,7 +402,7 @@ const ChatInterface = ({ isOnboarding = false, isFullWidth = false }) => {
 
       <Container maxWidth="md" sx={{ flex: 1, display: 'flex', flexDirection: 'column', py: 2 }}>
         {/* Information card for onboarding */}
-        {isOnboarding && (
+        {!isFullWidth && (
           <Card sx={{ mb: 3, bgcolor: 'primary.light', color: 'white' }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -552,168 +419,143 @@ const ChatInterface = ({ isOnboarding = false, isFullWidth = false }) => {
         )}
 
         {/* Chat area */}
-        <ChatContainer elevation={3} sx={{ width: isFullWidth ? '100%' : '800px' }}>
-          <MessagesBox>
-            {messages.map((message, index) => (
-              <MessageContainer key={index} sx={{ flexDirection: message.sender === 'user' ? 'row-reverse' : 'row' }}>
-                <Avatar 
-                  sx={{ 
-                    bgcolor: message.sender === 'user' ? 'primary.main' : 'secondary.main',
-                    width: 36, 
-                    height: 36,
-                    mr: message.sender === 'user' ? 0 : 1,
-                    ml: message.sender === 'user' ? 1 : 0
-                  }}
-                >
-                  {message.sender === 'user' ? user?.user_id?.charAt(0).toUpperCase() || 'U' : 'W'}
-                </Avatar>
-                <MessageContent isUserMessage={message.sender === 'user'}>
-                  {message.sender === 'user' ? (
-                    <Typography variant="body1">{message.text}</Typography>
-                  ) : (
-                    <>
-                      {message.isError ? (
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                          <ErrorOutlineIcon color="error" sx={{ mr: 1 }} />
-                          <Typography variant="body2" color="error.main">
-                            Error
-                          </Typography>
-                        </Box>
-                      ) : null}
-                      <Box sx={{ mt: 1 }}>
-                        <MarkdownRenderer content={message.text} />
-                      </Box>
-                      
-                      {/* Show inline recommendations (if any for this message) */}
-                      {message.recommendations && message.recommendations.length > 0 && (
-                        <Box sx={{ mt: 2, borderTop: '1px solid', borderColor: 'divider', pt: 1 }}>
-                          <Typography variant="caption" color="text.secondary">
-                            Recommended for you:
-                          </Typography>
-                          {message.recommendations.map((rec, idx) => (
-                            <Box key={idx} sx={{ mt: 1, p: 1, bgcolor: 'background.paper', borderRadius: 1 }}>
-                              <Typography variant="body2" fontWeight="medium">{rec.title}</Typography>
-                              <Typography variant="caption" color="text.secondary">{rec.description}</Typography>
-                            </Box>
-                          ))}
-                        </Box>
-                      )}
-                      
-                      {message.sender === 'bot' && !message.isError && (
-                        <FeedbackContainer>
-                          <IconButton 
-                            size="small" 
-                            onClick={() => handleFeedback(message.id, true)}
-                            sx={{ color: 'text.secondary' }}
-                          >
-                            <ThumbUpIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton 
-                            size="small" 
-                            onClick={() => handleFeedback(message.id, false)}
-                            sx={{ color: 'text.secondary' }}
-                          >
-                            <ThumbDownIcon fontSize="small" />
-                          </IconButton>
-                        </FeedbackContainer>
-                      )}
-                    </>
-                  )}
-                </MessageContent>
-              </MessageContainer>
-            ))}
-            {isTyping && (
-              <TypingBox>
-                <TypingIndicator />
-              </TypingBox>
-            )}
-            <div ref={messagesEndRef} />
-          </MessagesBox>
-          
-          {/* Error message */}
-          {error && (
-            <Box sx={{ mb: 2 }}>
-              <Card sx={{ bgcolor: 'error.light' }}>
-                <CardContent>
-                  <Typography color="error.dark">
-                    {error}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Box>
-          )}
-          
-          {/* Recommendations as a compact card - only when there are recommendations */}
-          {recommendations.length > 0 && (
-            <Box sx={{ mb: 2 }}>
-              <Card variant="outlined" sx={{ maxHeight: '200px', overflowY: 'auto' }}>
-                <CardContent sx={{ py: 1 }}>
-                  <Typography variant="subtitle2" color="primary" gutterBottom>
-                    Personalized Recommendations
-                  </Typography>
-                  {recommendations.map((rec, idx) => (
-                    <Box key={idx} sx={{ 
-                      display: 'flex', 
-                      alignItems: 'flex-start', 
-                      mb: 1,
-                      pb: 1,
-                      borderBottom: idx < recommendations.length - 1 ? '1px solid' : 'none',
-                      borderColor: 'divider'
-                    }}>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" fontWeight="medium">{rec.title}</Typography>
-                        <Typography variant="caption" color="text.secondary">{rec.description}</Typography>
-                      </Box>
-                      {rec.action && (
-                        <Button size="small" variant="outlined" sx={{ ml: 1, minWidth: 'auto' }}>
-                          {rec.action}
-                        </Button>
-                      )}
-                    </Box>
-                  ))}
-                </CardContent>
-              </Card>
-            </Box>
-          )}
-          
-          {/* Input area */}
-          <InputArea>
-            <TextField
-              variant="outlined"
+        <ChatContainer elevation={3} sx={{ ...containerWidthStyle, height: isFullWidth ? 'auto' : { xs: '80vh', sm: '500px' }, maxHeight: isFullWidth ? 'none' : { xs: '80vh', sm: '500px' } }}>
+          {/* Chat header */}
+          <ChatHeader
+            onClick={() => setIsExpanded(!isExpanded)}
+            sx={{ cursor: 'pointer' }}
+          >
+            <Typography variant="h6" component="div">
+              {productId ? 'Product Chat Assistant' : 'Financial Assistant'}
+            </Typography>
+            <IconButton
               size="small"
-              fullWidth
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your message here..."
-              disabled={loading}
-              multiline
-              maxRows={4}
-              sx={{ mr: 1 }}
-            />
-            <input
-              type="file"
-              style={{ display: 'none' }}
-              ref={fileInputRef}
-              onChange={handleFileSelect}
-            />
-            <IconButton 
-              color="primary" 
-              onClick={handleFileButtonClick}
-              disabled={loading}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(!isExpanded);
+              }}
             >
-              <AttachFileIcon />
+              <ExpandMoreIcon
+                sx={{
+                  transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease-in-out',
+                }}
+              />
             </IconButton>
-            <Button
-              variant="contained"
-              color="primary"
-              endIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SendIcon />}
-              onClick={handleSendMessage}
-              disabled={loading || !inputMessage.trim()}
-            >
-              Send
-            </Button>
-          </InputArea>
+          </ChatHeader>
+
+          {/* Collapsible chat body */}
+          {isExpanded && (
+            <>
+              {/* Messages area */}
+              <MessagesBox
+                ref={messagesContainerRef}
+                onScroll={handleScroll}
+                sx={{
+                  height: isFullWidth ? '500px' : 'calc(100% - 130px)',
+                  maxHeight: isFullWidth ? '500px' : 'calc(100% - 130px)',
+                }}
+              >
+                {messages.map((message, index) => (
+                  <MessageWrapper
+                    key={message.id || index}
+                    isUser={message.isUser}
+                  >
+                    <MessageContentWrapper isUserMessage={message.isUser}>
+                      {message.content.includes('```') ? (
+                        <MarkdownRenderer content={message.content} />
+                      ) : (
+                        message.content
+                      )}
+                    </MessageContentWrapper>
+                    
+                    {/* Only render recommendations if they exist and limit to one per message */}
+                    {!message.isUser && 
+                     message.recommendations && 
+                     message.recommendations.length > 0 && (
+                      <Box sx={{ mt: 2, mb: 1, width: '100%' }}>
+                        <RecommendationList 
+                          recommendations={message.recommendations.slice(0, 1)} 
+                        />
+                      </Box>
+                    )}
+                  </MessageWrapper>
+                ))}
+                
+                {/* Typing indicator */}
+                {isTyping && (
+                  <MessageWrapper isUser={false}>
+                    <MessageContentWrapper isUserMessage={false}>
+                      <TypingIndicator />
+                    </MessageContentWrapper>
+                  </MessageWrapper>
+                )}
+                
+                {/* Error message if any */}
+                {error && (
+                  <MessageWrapper isUser={false}>
+                    <MessageContentWrapper 
+                      isUserMessage={false}
+                      sx={{ color: 'error.main', bgcolor: 'error.light' }}
+                    >
+                      {error}
+                    </MessageContentWrapper>
+                  </MessageWrapper>
+                )}
+                
+                {/* Invisible element for scrolling to bottom */}
+                <div ref={messagesEndRef} />
+              </MessagesBox>
+              
+              {/* Scroll to bottom button */}
+              {showScrollDown && (
+                <ScrollDownButton
+                  color="primary"
+                  onClick={scrollToBottom}
+                  sx={{ bottom: '70px' }}
+                >
+                  <ExpandMoreIcon />
+                </ScrollDownButton>
+              )}
+              
+              {/* Input area */}
+              <ChatInputWrapper
+                component="form"
+                onSubmit={handleSubmit}
+                sx={{
+                  borderTop: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <TextField
+                  fullWidth
+                  placeholder="Type your message here..."
+                  value={input}
+                  onChange={handleInputChange}
+                  variant="outlined"
+                  size="small"
+                  disabled={isTyping}
+                  InputProps={{
+                    sx: { 
+                      pr: 1,
+                      borderRadius: 2,
+                      bgcolor: 'background.paper'
+                    }
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  color="primary"
+                  endIcon={<SendIcon />}
+                  disabled={!input.trim() || isTyping}
+                  type="submit"
+                  sx={{ ml: 1, borderRadius: 2 }}
+                >
+                  Send
+                </Button>
+              </ChatInputWrapper>
+            </>
+          )}
         </ChatContainer>
       </Container>
     </Box>
