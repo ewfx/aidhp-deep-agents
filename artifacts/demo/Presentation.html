@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Modal Financial Advisor Chatbot</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .slide {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            box-sizing: border-box;
+            scroll-snap-align: start;
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            overflow: auto;
+        }
+        h1 {
+            color: #0033a0;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        h2 {
+            color: #ce1126;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+        }
+        h3 {
+            color: #0033a0;
+            font-size: 1.5rem;
+        }
+        ul {
+            text-align: left;
+            width: 80%;
+        }
+        li {
+            margin-bottom: 0.8rem;
+            line-height: 1.5;
+        }
+        .architecture {
+            width: 90%;
+            overflow: auto;
+            border: 1px solid #ddd;
+            padding: 1rem;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+            font-family: monospace;
+            white-space: pre;
+        }
+        table {
+            width: 90%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 0.8rem;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .feature-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            width: 90%;
+        }
+        .feature {
+            width: 48%;
+            margin-bottom: 2rem;
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .split-container {
+            display: flex;
+            width: 90%;
+            justify-content: space-between;
+        }
+        .split-half {
+            width: 48%;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            width: 90%;
+        }
+        .tech-category {
+            width: 30%;
+            margin-bottom: 1rem;
+        }
+        strong {
+            color: #0033a0;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide">
+        <h1>Multi-Modal Financial Advisor Chatbot</h1>
+        <h2>A Hyper-Personalized AI-Driven Financial Advisory Solution</h2>
+        <div class="container">
+            <p style="text-align: center; font-size: 1.2rem;">
+                Empowering users with personalized financial guidance through innovative AI technologies
+            </p>
+        </div>
+    </div>
+
+    <div class="slide">
+        <h2>Project Overview</h2>
+        <div class="container">
+            <ul>
+                <li><strong>Hyper-personalized</strong> financial recommendations</li>
+                <li><strong>Dual-agent architecture</strong> for deeper personalization</li>
+                <li><strong>Multi-modal input processing</strong> (text, images, future voice)</li>
+                <li><strong>Ethical AI framework</strong> promoting transparency and trust</li>
+                <li><strong>Product-specific chatbots</strong> for detailed product exploration</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="slide">
+        <h2>System Architecture</h2>
+        <div class="architecture">
+┌───────────────────────────────────────────────────────────────────────────┐
+│                              CLIENT LAYER                                  │
+│                                                                           │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐        │
+│  │   Web Interface │    │   Mobile App    │    │   API Clients   │        │
+│  │    (React.js)   │    │    (Future)     │    │                 │        │
+│  └────────┬────────┘    └────────┬────────┘    └────────┬────────┘        │
+└───────────┼─────────────────────┼─────────────────────┼────────────────────┘
+            │                     │                     │                    
+┌───────────┼─────────────────────┼─────────────────────┼────────────────────┐
+│           ▼                     ▼                     ▼                    │
+│                           APPLICATION LAYER                                │
+│                                                                           │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐        │
+│  │ Authentication  │    │   Onboarding    │    │  Recommendation │        │
+│  │    Service      │    │     Engine      │    │     Engine      │        │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘        │
+│                                                                           │
+│  ┌─────────────────┐    ┌─────────────────┐                               │
+│  │    FastAPI      │    │    Advisory     │                               │
+│  │    Backend      │◄───►    Document     │                               │
+│  │                 │    │    Generator    │                               │
+│  └────────┬────────┘    └─────────────────┘                               │
+└───────────┼─────────────────────────────────────────────────────────────────┘
+            │                                                               
+┌───────────┼─────────────────────────────────────────────────────────────────┐
+│           ▼                            AI LAYER                            │
+│  ┌─────────────────────────┐    ┌─────────────────────────────────┐        │
+│  │    Dual-Agent System    │    │         LLM Services            │        │
+│  │ ┌───────────┐ ┌───────┐ │    │ ┌─────────┐ ┌────────┐ ┌─────┐  │        │
+│  │ │Onboarding │ │Advisory│ │    │ │OpenAI   │ │Mistral │ │Other│  │        │
+│  │ │  Agent    │ │ Agent  │ │    │ │GPT-3.5/4│ │AI      │ │LLMs │  │        │
+│  │ └───────────┘ └───────┘ │    │ └─────────┘ └────────┘ └─────┘  │        │
+│  └─────────────────────────┘    └─────────────────────────────────┘        │
+│                                                                           │
+│  ┌─────────────────────────┐    ┌─────────────────────────────────┐        │
+│  │  Product-Specific       │    │      Multi-Modal Processing     │        │
+│  │  Chatbots               │    │    (Text, Images, Voice)        │        │
+│  └─────────────────────────┘    └─────────────────────────────────┘        │
+└───────────────────────────────────────────────────────────────────────────┘
+                                                                            
+┌───────────────────────────────────────────────────────────────────────────┐
+│                             DATA LAYER                                    │
+│                                                                           │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐        │
+│  │    MongoDB      │    │  Vector Store   │    │     Redis       │        │
+│  │  (User Data)    │    │  (Embeddings)   │    │    (Caching)    │        │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘        │
+└───────────────────────────────────────────────────────────────────────────┘
+                                                                            
+┌───────────────────────────────────────────────────────────────────────────┐
+│                         ETHICAL AI LAYER                                  │
+│                                                                           │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐        │
+│  │  Explainability │    │ Bias Detection  │    │  Transparency   │        │
+│  │      Tools      │    │ & Mitigation    │    │   Mechanisms    │        │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘        │
+└───────────────────────────────────────────────────────────────────────────┘
+        </div>
+    </div>
+
+    <div class="slide">
+        <h2>Key Features</h2>
+        <div class="feature-container">
+            <div class="feature">
+                <h3>Two-Agent Architecture</h3>
+                <ul>
+                    <li><strong>Onboarding Agent</strong>: Focused on understanding user through conversational interaction</li>
+                    <li><strong>Advisory Agent</strong>: Delivers tailored recommendations and content</li>
+                    <li><strong>Seamless Transition</strong>: Preserves context between agents</li>
+                </ul>
+            </div>
+            <div class="feature">
+                <h3>Personalized Advisory Documents</h3>
+                <ul>
+                    <li><strong>Goal-Aligned Content</strong>: Educational materials aligned with user's financial goals</li>
+                    <li><strong>Knowledge Gap Identification</strong>: Adapts to user's financial literacy</li>
+                    <li><strong>Rich Markdown Rendering</strong>: Well-structured content presentation</li>
+                </ul>
+            </div>
+            <div class="feature">
+                <h3>Product-Specific Chatbots</h3>
+                <ul>
+                    <li><strong>Dedicated Specialists</strong>: Each product has its own conversational interface</li>
+                    <li><strong>In-depth Explanations</strong>: Detailed product information on demand</li>
+                    <li><strong>Transparent Decisions</strong>: Clear rationales for recommendations</li>
+                </ul>
+            </div>
+            <div class="feature">
+                <h3>Ethical AI Framework</h3>
+                <ul>
+                    <li><strong>Explainable Recommendations</strong>: Clear reasoning behind suggestions</li>
+                    <li><strong>Bias Mitigation</strong>: Continuous monitoring and correction</li>
+                    <li><strong>Transparent Data Usage</strong>: User control over information</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide">
+        <h2>User Personas</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Persona</th>
+                    <th>Age</th>
+                    <th>Risk Tolerance</th>
+                    <th>Primary Goals</th>
+                    <th>Key Characteristics</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Conservative Saver</strong></td>
+                    <td>55-65</td>
+                    <td>Low</td>
+                    <td>Retirement security</td>
+                    <td>Prioritizes safety</td>
+                </tr>
+                <tr>
+                    <td><strong>Young Professional</strong></td>
+                    <td>25-35</td>
+                    <td>Moderate-High</td>
+                    <td>Wealth building</td>
+                    <td>Tech-savvy, sustainability focus</td>
+                </tr>
+                <tr>
+                    <td><strong>Family Planner</strong></td>
+                    <td>35-45</td>
+                    <td>Moderate</td>
+                    <td>College savings, security</td>
+                    <td>Balanced approach</td>
+                </tr>
+                <tr>
+                    <td><strong>Pre-Retiree</strong></td>
+                    <td>50-60</td>
+                    <td>Moderate-Low</td>
+                    <td>Retirement optimization</td>
+                    <td>Tax efficiency focus</td>
+                </tr>
+                <tr>
+                    <td><strong>Business Owner</strong></td>
+                    <td>40-55</td>
+                    <td>Moderate-High</td>
+                    <td>Business growth</td>
+                    <td>Complex financial needs</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="slide">
+        <h2>Technology Stack</h2>
+        <div class="tech-stack">
+            <div class="tech-category">
+                <h3>Frontend</h3>
+                <ul>
+                    <li>React.js</li>
+                    <li>Material-UI</li>
+                    <li>Markdown rendering</li>
+                </ul>
+            </div>
+            <div class="tech-category">
+                <h3>Backend</h3>
+                <ul>
+                    <li>FastAPI (Python)</li>
+                    <li>JWT authentication</li>
+                    <li>WebSockets</li>
+                </ul>
+            </div>
+            <div class="tech-category">
+                <h3>AI Services</h3>
+                <ul>
+                    <li>OpenAI GPT-3.5/4</li>
+                    <li>Mistral AI (Mistral-7B)</li>
+                    <li>Hugging Face models</li>
+                </ul>
+            </div>
+            <div class="tech-category">
+                <h3>Data Storage</h3>
+                <ul>
+                    <li>MongoDB (User Data)</li>
+                    <li>Vector Store (Embeddings)</li>
+                    <li>Redis (Caching)</li>
+                </ul>
+            </div>
+            <div class="tech-category">
+                <h3>Ethical AI</h3>
+                <ul>
+                    <li>Explainability tools</li>
+                    <li>Bias detection</li>
+                    <li>Transparency mechanisms</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide">
+        <h2>User Flow</h2>
+        <ol style="width: 80%; text-align: left; font-size: 1.2rem;">
+            <li><strong>User Registration & Authentication</strong></li>
+            <li><strong>Comprehensive Onboarding Process</strong> (Onboarding Agent)
+                <ul>
+                    <li>Financial goals, risk tolerance, existing products</li>
+                    <li>Income, expense patterns, and knowledge level</li>
+                </ul>
+            </li>
+            <li><strong>Profile Generation & Analysis</strong></li>
+            <li><strong>Personalized Recommendations & Advisory Documents</strong> (Advisory Agent)</li>
+            <li><strong>Product-Specific Exploration</strong> via dedicated chatbots</li>
+            <li><strong>Continuous Learning & Adaptation</strong> based on user feedback</li>
+        </ol>
+    </div>
+
+    <div class="slide">
+        <h2>Benefits</h2>
+        <div class="split-container">
+            <div class="split-half">
+                <h3>For Users</h3>
+                <ul>
+                    <li>Truly personalized financial advice</li>
+                    <li>Educational content tailored to knowledge gaps</li>
+                    <li>Transparent explanations for all recommendations</li>
+                    <li>Multi-modal interaction options</li>
+                    <li>Enhanced financial literacy</li>
+                </ul>
+            </div>
+            <div class="split-half">
+                <h3>For Financial Institutions</h3>
+                <ul>
+                    <li>Deeper customer engagement</li>
+                    <li>Higher conversion rates</li>
+                    <li>Operational efficiency</li>
+                    <li>Rich customer insights</li>
+                    <li>Competitive differentiation</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide">
+        <h2>Getting Started</h2>
+        <div class="container" style="text-align: left; width: 80%;">
+            <ul style="width: 100%; font-size: 1.2rem;">
+                <li><strong>Backend API:</strong> http://localhost:8000</li>
+                <li><strong>Frontend Application:</strong> http://localhost:3000</li>
+                <li><strong>Default Test Account:</strong> Username <code>testuser</code>, Password <code>password</code></li>
+                <li><strong>Sample User Personas:</strong> See Application Guide for detailed testing scenarios</li>
+                <li><strong>Documentation:</strong> Available in <code>artifacts</code> directory</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="slide">
+        <h2>Future Roadmap</h2>
+        <ul style="font-size: 1.2rem;">
+            <li><strong>Voice Interface Integration</strong></li>
+            <li><strong>Mobile Application Development</strong></li>
+            <li><strong>Advanced Predictive Analytics</strong></li>
+            <li><strong>Community Learning Features</strong></li>
+            <li><strong>Expanded Product Range Support</strong></li>
+        </ul>
+    </div>
+
+    <div class="slide">
+        <h1>Thank You</h1>
+        <h2>Next Steps</h2>
+        <ul style="font-size: 1.2rem;">
+            <li>Review detailed documentation in <code>artifacts</code> directory</li>
+            <li>Test the application with sample personas</li>
+            <li>Explore the dual-agent architecture in action</li>
+            <li>Provide feedback on personalization quality</li>
+        </ul>
+    </div>
+</body>
+</html> 
