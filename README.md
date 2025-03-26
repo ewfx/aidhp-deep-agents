@@ -1,4 +1,4 @@
-# 🚀 Project Name
+# 🚀 Multi-Modal Financial Recommendation Agent
 
 ## 📌 Table of Contents
 - [Introduction](#introduction)
