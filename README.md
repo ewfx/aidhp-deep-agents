@@ -22,8 +22,8 @@ Key technical components include a FastAPI backend, MongoDB for data storage, an
 🔗 [Live Demo](#) (if applicable)  
 📹 [Video Demo](#) (if applicable)  
 🖼️ Screenshots: Just a demo check to see if able to commit
-
-![Screenshot 1](link-to-image)
+![Dashboard](https://github.com/user-attachments/assets/243042cc-ec23-4ccd-b832-e0bdc554017a)
+![Recommendation](https://github.com/user-attachments/assets/56d9cdd6-53ba-4630-81bb-2b8bfdfdf65d)
 
 ## 💡 Inspiration
 ​The Multi-Modal Financial Advisor Chatbot was inspired by the need to enhance customer engagement in the financial sector through personalized and adaptive advisory services. Traditional financial advice often lacks personalization and fails to adapt to individual user behaviors and preferences. This project aims to address this gap by developing an AI-driven digital advisor that leverages multi-modal inputs—such as text, images, and voice—to provide hyper-personalized financial recommendations. By integrating advanced Generative AI techniques and real-time behavioral analysis, the chatbot dynamically tailors its advice to align with each user's unique financial habits and needs, fostering greater trust and loyalty.
