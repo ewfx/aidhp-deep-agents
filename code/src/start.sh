@@ -35,6 +35,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Change to script directory
+cd "$(dirname "$0")"
+SCRIPT_DIR=$(pwd)
+
 # Update .env file with database toggle setting
 sed -i.bak "s/^USE_LOCAL_DB=.*/USE_LOCAL_DB=$USE_LOCAL_DB/" .env
 
@@ -49,6 +53,30 @@ if [ -d ".venv" ]; then
   source .venv/bin/activate
 fi
 
+# Check for dependencies
+echo "Checking for required dependencies..."
+python3 -c "import jose" 2>/dev/null
+if [ $? -ne 0 ]; then
+  echo "Missing 'jose' package. Installing..."
+  pip install python-jose[cryptography]==3.4.0
+fi
+
+python3 -c "import email_validator" 2>/dev/null
+if [ $? -ne 0 ]; then
+  echo "Missing 'email_validator' package. Installing..."
+  pip install email-validator==2.1.1
+fi
+
+python3 -c "import pandas" 2>/dev/null
+if [ $? -ne 0 ]; then
+  echo "Missing 'pandas' package. Installing..."
+  pip install pandas==2.2.2
+fi
+
+# Run the test import script to verify app can be imported
+echo "Testing app module import..."
+python3 $SCRIPT_DIR/test_import.py
+
 # Check if MongoDB is running locally
 if $USE_LOCAL_DB; then
   echo "Using local MongoDB connection"
@@ -61,13 +89,42 @@ fi
 
 # Start the backend server in the background
 echo "Starting the backend server on port 8000..."
-cd "$(dirname "$0")"
 source .venv/bin/activate
-uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+
+# First validate that imports will work
+echo "Validating Python imports..."
+python3 -c "from jose import JWTError, jwt; print('✓ JWT imports validated')" || { 
+  echo "Error: JWT imports failed. Running pip install to fix..."; 
+  pip install python-jose[cryptography]==3.4.0; 
+}
+
+python3 -c "import email_validator; print('✓ Email validator imports validated')" || { 
+  echo "Error: Email validator imports failed. Running pip install to fix..."; 
+  pip install email-validator==2.1.1; 
+}
+
+python3 -c "import pandas; print('✓ Pandas imports validated')" || { 
+  echo "Error: Pandas imports failed. Running pip install to fix..."; 
+  pip install pandas==2.2.2; 
+}
+
+# Add current directory to PYTHONPATH to find the app module
+export PYTHONPATH=$SCRIPT_DIR:$PYTHONPATH
+echo "PYTHONPATH set to: $PYTHONPATH"
+
+# Start the server with the Python script that handles importing properly
+cd $SCRIPT_DIR
+echo "Starting server with Python-based starter script..."
+python3 $SCRIPT_DIR/start_app.py &
 BACKEND_PID=$!
 
-# Give the backend a moment to start
-sleep 3
+# Give the backend more time to start and check if it's still running
+echo "Waiting for backend to initialize..."
+sleep 5
+if ! ps -p $BACKEND_PID > /dev/null; then
+  echo "ERROR: Backend failed to start. Check the logs above for errors."
+  exit 1
+fi
 
 # Start the frontend
 echo "Starting the frontend on port 3000..."

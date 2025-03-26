@@ -17,6 +17,10 @@ if errorlevel 1 (
     exit /b 1
 )
 
+REM Get the current directory
+set SCRIPT_DIR=%cd%
+echo Installation directory: %SCRIPT_DIR%
+
 REM Create and activate virtual environment
 echo Creating Python virtual environment...
 python -m venv .venv
@@ -26,6 +30,66 @@ REM Install Python dependencies
 echo Installing Python requirements...
 python -m pip install --upgrade pip
 pip install -r requirements.txt
+
+REM Install additional dependencies that might be missing
+echo Installing additional dependencies...
+pip install python-jose[cryptography]==3.4.0
+pip install email-validator==2.1.1
+pip install pandas==2.2.2
+
+REM Add the current directory to Python path
+echo Setting up Python path...
+for /f "tokens=*" %%a in ('python -c "import site; print(site.getsitepackages()[0])"') do set SITE_PACKAGES=%%a
+echo Creating path file in: %SITE_PACKAGES%
+echo %SCRIPT_DIR% > "%SITE_PACKAGES%\app.pth"
+
+REM Verify critical packages are installed
+echo Verifying critical packages...
+python -c "from jose import JWTError, jwt; print('✓ JWT packages verified')" 2>nul
+if errorlevel 1 (
+    echo Error: JWT packages not installed correctly. Trying again...
+    pip uninstall -y python-jose
+    pip uninstall -y cryptography
+    pip install cryptography==42.0.5
+    pip install python-jose[cryptography]==3.4.0
+    python -c "from jose import JWTError, jwt; print('✓ JWT packages verified (retry)')" 2>nul
+    if errorlevel 1 (
+        echo Error: JWT packages still not installed correctly. Please check your Python environment.
+        pause
+        exit /b 1
+    )
+)
+
+REM Verify email validator package
+python -c "import email_validator; print('✓ Email validator package verified')" 2>nul
+if errorlevel 1 (
+    echo Error: Email validator package not installed correctly. Trying again...
+    pip install email-validator==2.1.1
+    python -c "import email_validator; print('✓ Email validator package verified (retry)')" 2>nul
+    if errorlevel 1 (
+        echo Error: Email validator package still not installed correctly. Please check your Python environment.
+        pause
+        exit /b 1
+    )
+)
+
+REM Verify pandas package
+python -c "import pandas; print('✓ Pandas package verified')" 2>nul
+if errorlevel 1 (
+    echo Error: Pandas package not installed correctly. Trying again...
+    pip install pandas==2.2.2
+    python -c "import pandas; print('✓ Pandas package verified (retry)')" 2>nul
+    if errorlevel 1 (
+        echo Error: Pandas package still not installed correctly. Please check your Python environment.
+        pause
+        exit /b 1
+    )
+)
+
+REM Verify app module is in the Python path
+echo Verifying Python path setup...
+python -c "import sys; print('Current Python path:'); print('\n'.join(sys.path))"
+python -c "import sys; sys.path.append('%SCRIPT_DIR%'); print('✓ App directory added to Python path')"
 
 REM Install frontend dependencies
 echo Installing frontend dependencies...
@@ -47,8 +111,8 @@ if not exist .env (
         echo.
         echo # API Keys
         echo OPENAI_API_KEY=
-        echo HUGGINGFACE_TOKEN=
         echo MISTRAL_API_KEY=Uf6oAM3GC8D18fi3Zn6lVNUNxp92Z592
+        echo GOOGLE_API_KEY=AIzaSyDbtwa0HfpRqmFUV3D1vEUIyYHBBHWLy6M
     ) > .env
 )
 
